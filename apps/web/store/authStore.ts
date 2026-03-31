@@ -5,6 +5,7 @@ interface User {
   fullName: string;
   email: string;
   role: string;
+  phone?: string;
 }
 
 interface AuthState {
@@ -19,6 +20,15 @@ interface AuthState {
   setLoading: (val: boolean) => void;
 }
 
+function setCookie(name: string, value: string, days = 7) {
+  const expires = new Date(Date.now() + days * 864e5).toUTCString();
+  document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/; SameSite=Lax`;
+}
+
+function deleteCookie(name: string) {
+  document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+}
+
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   token: null,
@@ -28,12 +38,15 @@ export const useAuthStore = create<AuthState>((set) => ({
   login: (user, token) => {
     localStorage.setItem("smartpath_token", token);
     localStorage.setItem("smartpath_user", JSON.stringify(user));
+    // Also set cookie so Next.js middleware can read it for route protection
+    setCookie("smartpath_token", token);
     set({ user, token, isAuthenticated: true });
   },
 
   logout: () => {
     localStorage.removeItem("smartpath_token");
     localStorage.removeItem("smartpath_user");
+    deleteCookie("smartpath_token");
     set({ user: null, token: null, isAuthenticated: false });
     window.location.href = "/login";
   },
@@ -46,14 +59,13 @@ export const useAuthStore = create<AuthState>((set) => ({
         const user: User = JSON.parse(raw);
         set({ user, token, isAuthenticated: true });
       } catch {
-        // corrupted storage — clear it
         localStorage.removeItem("smartpath_token");
         localStorage.removeItem("smartpath_user");
+        deleteCookie("smartpath_token");
       }
     }
   },
 
   setUser: (user) => set({ user }),
-
   setLoading: (val) => set({ isLoading: val }),
 }));

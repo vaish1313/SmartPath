@@ -9,9 +9,10 @@ const createBooking = async (req, res) => {
   const testDocs = await Test.find({ _id: { $in: tests }, isActive: true });
 
   if (testDocs.length !== tests.length) {
+    console.log('[createBooking] Test mismatch — requested:', tests, 'found:', testDocs.map(t => t._id));
     return res.status(400).json({
       success: false,
-      message: 'One or more tests are invalid or inactive',
+      message: `One or more tests are invalid or inactive. Requested ${tests.length}, found ${testDocs.length} active tests.`,
     });
   }
 

@@ -5,8 +5,40 @@ export interface RegisterData {
   email: string;
   phone: string;
   password: string;
-  gender: string;
+  gender?: string;
   dateOfBirth?: string;
+  role?: string;
+}
+
+export interface UpdateProfileData {
+  fullName?: string;
+  phone?: string;
+  dateOfBirth?: string;
+  gender?: string;
+  address?: {
+    street?: string;
+    city?: string;
+    state?: string;
+    pincode?: string;
+  };
+}
+
+export interface CreateBookingData {
+  patientId: string;
+  patientName: string;
+  patientPhone: string;
+  tests: string[];
+  bookingType: "walk-in" | "home-collection";
+  appointmentDate: string;
+  appointmentSlot: string;
+  address?: {
+    street?: string;
+    city?: string;
+    state?: string;
+    pincode?: string;
+  };
+  notes?: string;
+  paymentMethod?: "cash" | "online" | "insurance";
 }
 
 function createInstance(baseURL: string) {
@@ -38,7 +70,7 @@ function createInstance(baseURL: string) {
 export const patientApi = createInstance("http://localhost:3001");
 export const bookingApi = createInstance("http://localhost:3002");
 
-// Auth
+// ── Auth ──
 export const loginUser = (email: string, password: string) =>
   patientApi.post("/api/auth/login", { email, password });
 
@@ -51,19 +83,38 @@ export const getMe = () =>
 export const logoutUser = () =>
   patientApi.post("/api/auth/logout");
 
-// Tests
-export const getAllTests = (params?: Record<string, unknown>) =>
+// ── Patient ──
+export const getProfile = () =>
+  patientApi.get("/api/patients/profile");
+
+export const updateProfile = (data: UpdateProfileData) =>
+  patientApi.put("/api/patients/profile", data);
+
+export const getAllPatients = (params?: { page?: number; limit?: number; search?: string }) =>
+  patientApi.get("/api/patients", { params });
+
+// ── Tests ──
+export const getAllTests = (params?: { category?: string; sampleType?: string; search?: string }) =>
   bookingApi.get("/api/tests", { params });
 
-// Bookings
-export const createBooking = (data: Record<string, unknown>) =>
+export const getTestById = (id: string) =>
+  bookingApi.get(`/api/tests/${id}`);
+
+// ── Bookings ──
+export const createBooking = (data: CreateBookingData) =>
   bookingApi.post("/api/bookings", data);
 
 export const getMyBookings = (page = 1, limit = 10) =>
   bookingApi.get("/api/bookings/my", { params: { page, limit } });
 
-export const getAvailableSlots = (date: string) =>
-  bookingApi.get("/api/bookings/slots", { params: { date } });
+export const getBookingById = (id: string) =>
+  bookingApi.get(`/api/bookings/${id}`);
 
 export const cancelBooking = (id: string) =>
   bookingApi.delete(`/api/bookings/${id}`);
+
+export const getAvailableSlots = (date: string) =>
+  bookingApi.get("/api/bookings/slots", { params: { date } });
+
+export const getAllBookings = (params?: { page?: number; limit?: number; status?: string; date?: string }) =>
+  bookingApi.get("/api/bookings", { params });

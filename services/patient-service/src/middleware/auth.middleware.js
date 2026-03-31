@@ -39,4 +39,6 @@ const authorizeRoles = (...roles) => {
 module.exports = {
   authMiddleware,
   authorizeRoles,
+  // alias used by some routes
+  requireRole: authorizeRoles,
 };

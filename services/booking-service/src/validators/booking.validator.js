@@ -23,7 +23,7 @@ const createTestSchema = z.object({
 const createBookingSchema = z.object({
   patientId: z.string().min(1, 'Patient ID is required'),
   patientName: z.string().min(2, 'Patient name is required'),
-  patientPhone: z.string().length(10, 'Phone must be 10 digits').regex(/^\d+$/, 'Phone must contain only digits'),
+  patientPhone: z.string().min(1, 'Phone is required'),
   tests: z.array(z.string()).min(1, 'At least one test is required'),
   bookingType: z.enum(['walk-in', 'home-collection']),
   appointmentDate: z.string().min(1, 'Appointment date is required'),
@@ -52,18 +52,25 @@ const updateBookingStatusSchema = z.object({
 
 const validate = (schema) => {
   return (req, res, next) => {
+    // Debug: log every incoming request body and headers
+    console.log('[BOOKING] Incoming request:', req.method, req.path);
+    console.log('[BOOKING] Body:', JSON.stringify(req.body, null, 2));
+    console.log('[BOOKING] Auth header present:', !!req.headers.authorization);
+
     try {
       schema.parse(req.body);
       next();
     } catch (error) {
       if (error instanceof z.ZodError) {
+        const errors = error.errors.map((err) => ({
+          field: err.path.join('.'),
+          message: err.message,
+        }));
+        console.log('[BOOKING] Validation failed:', JSON.stringify(errors, null, 2));
         return res.status(400).json({
           success: false,
-          message: 'Validation failed',
-          errors: error.errors.map((err) => ({
-            field: err.path.join('.'),
-            message: err.message,
-          })),
+          message: `Validation failed: ${errors.map((e) => `${e.field} — ${e.message}`).join('; ')}`,
+          errors,
         });
       }
       next(error);

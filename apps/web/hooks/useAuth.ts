@@ -1,14 +1,18 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useAuthStore } from "@/store/authStore";
 import { getMe } from "@/lib/api";
 
 export function useAuth() {
   const { user, isAuthenticated, isLoading, logout, loadFromStorage, setUser, setLoading, token } =
     useAuthStore();
+  const verified = useRef(false);
 
   useEffect(() => {
+    if (verified.current) return;
+    verified.current = true;
+
     loadFromStorage();
 
     const storedToken = localStorage.getItem("smartpath_token");
@@ -30,5 +34,7 @@ export function useAuth() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  return { user, isAuthenticated, isLoading, logout, token };
+  const role = user?.role ?? null;
+
+  return { user, role, isAuthenticated, isLoading, logout, token };
 }

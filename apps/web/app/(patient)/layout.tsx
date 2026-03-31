@@ -4,24 +4,27 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import LoadingSpinner from "@/components/shared/LoadingSpinner";
+import Sidebar from "@/components/layout/Sidebar";
+import MobileNav from "@/components/layout/MobileNav";
 
 export default function PatientLayout({ children }: { children: React.ReactNode }) {
-    const { isAuthenticated, isLoading, user } = useAuth();
+    const { isAuthenticated, isLoading, role } = useAuth();
     const router = useRouter();
 
     useEffect(() => {
         if (isLoading) return;
-        if (!isAuthenticated) {
-            router.replace("/login");
-            return;
-        }
-        if (user?.role !== "patient") {
-            router.replace("/admin");
-        }
-    }, [isAuthenticated, isLoading, user, router]);
+        if (!isAuthenticated) { router.replace("/login"); return; }
+        if (role && role !== "patient") router.replace("/unauthorized");
+    }, [isAuthenticated, isLoading, role, router]);
 
     if (isLoading) return <LoadingSpinner fullScreen />;
-    if (!isAuthenticated || user?.role !== "patient") return null;
+    if (!isAuthenticated || (role && role !== "patient")) return null;
 
-    return <>{children}</>;
+    return (
+        <div className="flex min-h-screen bg-slate-50">
+            <Sidebar />
+            <div className="flex-1 pb-20 lg:pb-0">{children}</div>
+            <MobileNav />
+        </div>
+    );
 }

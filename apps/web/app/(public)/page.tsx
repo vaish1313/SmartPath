@@ -9,7 +9,7 @@ import Footer from "@/components/layout/Footer";
 
 export default function LandingPage() {
     return (
-        <div className="min-h-screen bg-[#060B14] text-white font-sans overflow-x-hidden">
+        <div className="min-h-screen bg-white text-[#1a2332] font-sans overflow-x-hidden">
             <Navbar />
             <HeroSection />
             <MarqueeBar />

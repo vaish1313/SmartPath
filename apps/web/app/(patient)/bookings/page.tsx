@@ -1,221 +1,191 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import {
-    FlaskConical, Clock, Calendar, ChevronRight,
-    Search, SlidersHorizontal, Plus
-} from "lucide-react";
+import { getMyBookings, cancelBooking } from "@/lib/api";
+import { FlaskConical, Clock, Calendar, ChevronRight, Search, Plus, Loader2, X } from "lucide-react";
+import ConfirmDialog from "@/components/shared/ConfirmDialog";
+import axios from "axios";
 
-/* ── Types ── */
 interface Booking {
-    id: string;
-    bookingNumber: string;
-    tests: string[];
-    date: string;
-    time: string;
-    collectionType: "lab" | "home";
-    status: "booked" | "sample_collected" | "processing" | "completed" | "cancelled";
-    total: number;
-    reportReady: boolean;
+  _id: string;
+  bookingId: string;
+  tests: { testName: string; price: number }[];
+  appointmentDate: string;
+  appointmentSlot: string;
+  bookingType: string;
+  status: string;
+  finalAmount: number;
 }
 
-/* ── Mock data ── */
-const MOCK_BOOKINGS: Booking[] = [
-    {
-        id: "1", bookingNumber: "SP-2025-0041",
-        tests: ["Complete Blood Count (CBC)", "Lipid Profile"],
-        date: "2025-03-22", time: "9:00 AM",
-        collectionType: "lab", status: "completed", total: 798, reportReady: true,
-    },
-    {
-        id: "2", bookingNumber: "SP-2025-0038",
-        tests: ["Thyroid Panel (T3, T4, TSH)"],
-        date: "2025-03-20", time: "8:00 AM",
-        collectionType: "home", status: "processing", total: 699, reportReady: false,
-    },
-    {
-        id: "3", bookingNumber: "SP-2025-0035",
-        tests: ["HbA1c", "Blood Sugar Fasting"],
-        date: "2025-03-18", time: "7:30 AM",
-        collectionType: "lab", status: "completed", total: 498, reportReady: true,
-    },
-    {
-        id: "4", bookingNumber: "SP-2025-0031",
-        tests: ["Vitamin D Total", "Vitamin B12"],
-        date: "2025-03-15", time: "10:00 AM",
-        collectionType: "lab", status: "completed", total: 1498, reportReady: true,
-    },
-    {
-        id: "5", bookingNumber: "SP-2025-0028",
-        tests: ["Urine Routine & Microscopy"],
-        date: "2025-03-10", time: "7:00 AM",
-        collectionType: "lab", status: "cancelled", total: 199, reportReady: false,
-    },
-    {
-        id: "6", bookingNumber: "SP-2025-0025",
-        tests: ["Liver Function Test (LFT)", "Kidney Function Test (KFT)"],
-        date: "2025-03-05", time: "8:30 AM",
-        collectionType: "home", status: "completed", total: 948, reportReady: true,
-    },
-];
-
-const STATUS_CONFIG = {
-    booked: { label: "Booked", color: "#0EA5E9", bg: "#0EA5E910" },
-    sample_collected: { label: "Sample Collected", color: "#F59E0B", bg: "#F59E0B10" },
-    processing: { label: "Processing", color: "#F59E0B", bg: "#F59E0B10" },
-    completed: { label: "Completed", color: "#14D7B4", bg: "#14D7B410" },
-    cancelled: { label: "Cancelled", color: "#EF4444", bg: "#EF444410" },
+const STATUS_STYLE: Record<string, string> = {
+  completed: "bg-teal-50 text-teal-700 border-teal-200",
+  processing: "bg-amber-50 text-amber-700 border-amber-200",
+  pending: "bg-slate-100 text-slate-600 border-slate-200",
+  confirmed: "bg-blue-50 text-blue-700 border-blue-200",
+  cancelled: "bg-red-50 text-red-600 border-red-200",
+  "sample-collected": "bg-purple-50 text-purple-700 border-purple-200",
 };
 
-const FILTERS = ["All", "Booked", "Processing", "Completed", "Cancelled"];
+const FILTERS = ["All", "Pending", "Processing", "Completed", "Cancelled"];
 
 export default function BookingsPage() {
-    const [search, setSearch] = useState("");
-    const [activeFilter, setActiveFilter] = useState("All");
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [activeFilter, setActiveFilter] = useState("All");
+  const [cancelId, setCancelId] = useState<string | null>(null);
+  const [cancelling, setCancelling] = useState(false);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
-    const filtered = MOCK_BOOKINGS.filter(b => {
-        const matchSearch =
-            b.bookingNumber.toLowerCase().includes(search.toLowerCase()) ||
-            b.tests.some(t => t.toLowerCase().includes(search.toLowerCase()));
-        const matchFilter =
-            activeFilter === "All" ||
-            (activeFilter === "Booked" && b.status === "booked") ||
-            (activeFilter === "Processing" && (b.status === "processing" || b.status === "sample_collected")) ||
-            (activeFilter === "Completed" && b.status === "completed") ||
-            (activeFilter === "Cancelled" && b.status === "cancelled");
-        return matchSearch && matchFilter;
-    });
+  const fetchBookings = useCallback(() => {
+    setLoading(true);
+    getMyBookings(page, 20)
+      .then((res) => {
+        setBookings(res.data.bookings || []);
+        setTotalPages(res.data.totalPages || 1);
+      })
+      .catch((err) => {
+        if (!axios.isAxiosError(err) || err.response?.status !== 401) console.error(err);
+      })
+      .finally(() => setLoading(false));
+  }, [page]);
 
-    const formatDate = (d: string) =>
-        new Date(d).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+  useEffect(() => { fetchBookings(); }, [fetchBookings]);
 
-    return (
-        <div className="min-h-screen bg-[#060B14]">
-            <div
-                className="fixed inset-0 pointer-events-none opacity-40"
-                style={{
-                    backgroundImage: "linear-gradient(rgba(20,215,180,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(20,215,180,0.03) 1px,transparent 1px)",
-                    backgroundSize: "48px 48px",
-                }}
-            />
+  const handleCancel = async () => {
+    if (!cancelId) return;
+    setCancelling(true);
+    try {
+      await cancelBooking(cancelId);
+      setBookings((prev) => prev.map((b) => b._id === cancelId ? { ...b, status: "cancelled" } : b));
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setCancelling(false);
+      setCancelId(null);
+    }
+  };
 
-            <div className="relative z-10 max-w-3xl mx-auto px-6 py-10">
-                {/* Header */}
-                <div className="flex items-center justify-between mb-8">
-                    <div>
-                        <h1 className="text-2xl font-semibold text-white" style={{ fontFamily: "'Instrument Serif', serif" }}>
-                            My Bookings
-                        </h1>
-                        <p className="text-[#556677] text-sm mt-0.5">{MOCK_BOOKINGS.length} total bookings</p>
-                    </div>
-                    <Link
-                        href="/book-test"
-                        className="flex items-center gap-2 bg-gradient-to-r from-[#14D7B4] to-[#0EA5E9] text-[#060B14] font-bold text-sm px-4 py-2.5 rounded-xl hover:opacity-90 transition-all shadow-lg shadow-[#14D7B4]/20"
-                    >
-                        <Plus className="w-4 h-4" />
-                        Book test
-                    </Link>
-                </div>
+  const filtered = bookings.filter((b) => {
+    const matchSearch =
+      b.bookingId?.toLowerCase().includes(search.toLowerCase()) ||
+      b.tests.some((t) => t.testName.toLowerCase().includes(search.toLowerCase()));
+    const matchFilter =
+      activeFilter === "All" ||
+      (activeFilter === "Pending" && ["pending", "confirmed"].includes(b.status)) ||
+      (activeFilter === "Processing" && ["processing", "sample-collected"].includes(b.status)) ||
+      (activeFilter === "Completed" && b.status === "completed") ||
+      (activeFilter === "Cancelled" && b.status === "cancelled");
+    return matchSearch && matchFilter;
+  });
 
-                {/* Search + filter */}
-                <div className="flex gap-3 mb-5">
-                    <div className="relative flex-1">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#445566]" />
-                        <input
-                            type="text"
-                            placeholder="Search by test or booking ID..."
-                            value={search}
-                            onChange={e => setSearch(e.target.value)}
-                            className="w-full bg-white/[0.04] border border-white/10 rounded-xl pl-11 pr-4 py-2.5 text-white text-sm placeholder:text-[#445566] outline-none focus:border-[#14D7B4]/50 focus:ring-2 focus:ring-[#14D7B4]/10 transition-all"
-                        />
-                    </div>
-                    <button className="w-11 h-11 bg-white/[0.04] border border-white/10 rounded-xl flex items-center justify-center text-[#667788] hover:text-white hover:border-white/20 transition-all">
-                        <SlidersHorizontal className="w-4 h-4" />
-                    </button>
-                </div>
-
-                {/* Filter pills */}
-                <div className="flex gap-2 mb-6 overflow-x-auto pb-1">
-                    {FILTERS.map(f => (
-                        <button
-                            key={f}
-                            onClick={() => setActiveFilter(f)}
-                            className={`text-xs px-3.5 py-1.5 rounded-full border whitespace-nowrap transition-all ${activeFilter === f
-                                    ? "bg-[#14D7B4]/15 border-[#14D7B4]/40 text-[#14D7B4]"
-                                    : "bg-white/[0.03] border-white/10 text-[#667788] hover:border-white/20"
-                                }`}
-                        >
-                            {f}
-                        </button>
-                    ))}
-                </div>
-
-                {/* Bookings list */}
-                {filtered.length === 0 ? (
-                    <div className="text-center py-20">
-                        <FlaskConical className="w-12 h-12 text-[#223344] mx-auto mb-4" strokeWidth={1.5} />
-                        <p className="text-[#445566] text-sm">No bookings found</p>
-                    </div>
-                ) : (
-                    <div className="space-y-3">
-                        {filtered.map(booking => {
-                            const status = STATUS_CONFIG[booking.status];
-                            return (
-                                <Link
-                                    key={booking.id}
-                                    href={`/bookings/${booking.id}`}
-                                    className="block bg-white/[0.02] border border-white/8 rounded-2xl p-5 hover:border-white/16 hover:bg-white/[0.04] transition-all duration-200 group"
-                                >
-                                    <div className="flex items-start justify-between mb-3">
-                                        <div>
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <span className="text-[#14D7B4] text-xs font-mono font-semibold">
-                                                    #{booking.bookingNumber}
-                                                </span>
-                                                <span
-                                                    className="text-[10px] font-semibold px-2.5 py-0.5 rounded-full"
-                                                    style={{ color: status.color, background: status.bg, border: `1px solid ${status.color}25` }}
-                                                >
-                                                    {status.label}
-                                                </span>
-                                                {booking.reportReady && (
-                                                    <span className="text-[10px] font-semibold px-2.5 py-0.5 rounded-full text-[#14D7B4] bg-[#14D7B4]/10 border border-[#14D7B4]/20">
-                                                        Report Ready
-                                                    </span>
-                                                )}
-                                            </div>
-                                            <div className="space-y-0.5">
-                                                {booking.tests.map(t => (
-                                                    <p key={t} className="text-white text-sm font-medium">{t}</p>
-                                                ))}
-                                            </div>
-                                        </div>
-                                        <ChevronRight className="w-4 h-4 text-[#334455] group-hover:text-[#667788] transition-colors mt-1 flex-shrink-0" />
-                                    </div>
-
-                                    <div className="flex items-center justify-between pt-3 border-t border-white/6">
-                                        <div className="flex items-center gap-4">
-                                            <span className="flex items-center gap-1.5 text-[#556677] text-xs">
-                                                <Calendar className="w-3 h-3" />
-                                                {formatDate(booking.date)}
-                                            </span>
-                                            <span className="flex items-center gap-1.5 text-[#556677] text-xs">
-                                                <Clock className="w-3 h-3" />
-                                                {booking.time}
-                                            </span>
-                                            <span className="text-[#445566] text-xs capitalize">
-                                                {booking.collectionType === "home" ? "🏠 Home" : "🏥 Lab"}
-                                            </span>
-                                        </div>
-                                        <span className="text-[#14D7B4] font-bold text-sm">₹{booking.total}</span>
-                                    </div>
-                                </Link>
-                            );
-                        })}
-                    </div>
-                )}
-            </div>
+  return (
+    <>
+      <main className="flex-1 p-6 max-w-3xl mx-auto w-full">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-800">My Bookings</h1>
+            <p className="text-slate-500 text-sm mt-0.5">{bookings.length} total bookings</p>
+          </div>
+          <Link href="/book-test" className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white font-semibold text-sm px-4 py-2.5 rounded-xl transition-all shadow-md shadow-teal-200">
+            <Plus className="w-4 h-4" /> Book test
+          </Link>
         </div>
-    );
+
+        <div className="relative mb-4">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <input
+            placeholder="Search by test or booking ID..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full bg-white border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-slate-700 text-sm outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100 transition-all shadow-sm"
+          />
+        </div>
+
+        <div className="flex gap-2 mb-5 overflow-x-auto pb-1">
+          {FILTERS.map((f) => (
+            <button key={f} onClick={() => setActiveFilter(f)}
+              className={`text-xs px-3.5 py-1.5 rounded-full border whitespace-nowrap transition-all font-medium ${activeFilter === f ? "bg-teal-600 text-white border-teal-600" : "bg-white text-slate-500 border-slate-200 hover:border-slate-300"}`}>
+              {f}
+            </button>
+          ))}
+        </div>
+
+        {loading ? (
+          <div className="flex items-center justify-center py-20">
+            <Loader2 className="w-6 h-6 text-teal-500 animate-spin" />
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="text-center py-20">
+            <FlaskConical className="w-12 h-12 text-slate-200 mx-auto mb-4" strokeWidth={1.5} />
+            <p className="text-slate-400 text-sm">No bookings found</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {filtered.map((b) => (
+              <div key={b._id} className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                      <span className="text-teal-600 text-xs font-mono font-semibold">#{b.bookingId}</span>
+                      <span className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-full border capitalize ${STATUS_STYLE[b.status] || STATUS_STYLE.pending}`}>
+                        {b.status.replace("-", " ")}
+                      </span>
+                    </div>
+                    <p className="text-slate-700 text-sm font-semibold">
+                      {b.tests.map((t) => t.testName).join(", ").slice(0, 60)}
+                      {b.tests.map((t) => t.testName).join(", ").length > 60 ? "..." : ""}
+                    </p>
+                  </div>
+                  <Link href={`/bookings/${b._id}`} className="text-slate-300 hover:text-slate-500 transition-colors ml-2">
+                    <ChevronRight className="w-4 h-4" />
+                  </Link>
+                </div>
+                <div className="flex items-center justify-between pt-3 border-t border-slate-50">
+                  <div className="flex items-center gap-4">
+                    <span className="flex items-center gap-1.5 text-slate-400 text-xs">
+                      <Calendar className="w-3 h-3" />
+                      {new Date(b.appointmentDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                    </span>
+                    <span className="flex items-center gap-1.5 text-slate-400 text-xs">
+                      <Clock className="w-3 h-3" /> {b.appointmentSlot}
+                    </span>
+                    <span className="text-slate-400 text-xs">{b.bookingType === "home-collection" ? "Home" : "Lab"}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-teal-600 font-bold text-sm">₹{b.finalAmount}</span>
+                    {["pending", "confirmed"].includes(b.status) && (
+                      <button onClick={() => setCancelId(b._id)} className="text-red-400 hover:text-red-600 transition-colors" title="Cancel">
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {totalPages > 1 && (
+          <div className="flex justify-center gap-2 mt-6">
+            <button disabled={page === 1} onClick={() => setPage(page - 1)} className="px-4 py-2 text-sm bg-white border border-slate-200 rounded-xl disabled:opacity-40 hover:border-teal-300 transition-all">Prev</button>
+            <span className="px-4 py-2 text-sm text-slate-500">{page} / {totalPages}</span>
+            <button disabled={page === totalPages} onClick={() => setPage(page + 1)} className="px-4 py-2 text-sm bg-white border border-slate-200 rounded-xl disabled:opacity-40 hover:border-teal-300 transition-all">Next</button>
+          </div>
+        )}
+      </main>
+
+      <ConfirmDialog
+        open={!!cancelId}
+        title="Cancel Booking"
+        description="Are you sure you want to cancel this booking? This action cannot be undone."
+        confirmLabel="Cancel Booking"
+        loading={cancelling}
+        onConfirm={handleCancel}
+        onCancel={() => setCancelId(null)}
+      />
+    </>
+  );
 }

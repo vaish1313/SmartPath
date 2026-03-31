@@ -9,7 +9,7 @@ const generateToken = (payload) => {
 };
 
 const register = async (req, res) => {
-  const { fullName, email, phone, password, gender, dateOfBirth } = req.body;
+  const { fullName, email, phone, password, gender, dateOfBirth, role } = req.body;
 
   // Check if email or phone already exists
   const existingPatient = await Patient.findOne({
@@ -23,7 +23,7 @@ const register = async (req, res) => {
     });
   }
 
-  // Create new patient
+  // Create new patient — role defaults to 'patient' if not provided
   const patient = await Patient.create({
     fullName,
     email,
@@ -31,13 +31,16 @@ const register = async (req, res) => {
     password,
     gender,
     dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
+    role: role || 'patient',
   });
 
-  // Generate JWT token
+  // Generate JWT token with userId, role, labId in payload
   const token = generateToken({
     id: patient._id,
+    userId: patient._id,
     email: patient.email,
     role: patient.role,
+    labId: 'prathamesh-nashik',
   });
 
   res.status(201).json({
@@ -47,6 +50,7 @@ const register = async (req, res) => {
       id: patient._id,
       fullName: patient.fullName,
       email: patient.email,
+      phone: patient.phone,
       role: patient.role,
     },
   });
@@ -92,8 +96,10 @@ const login = async (req, res) => {
   // Generate JWT token
   const token = generateToken({
     id: patient._id,
+    userId: patient._id,
     email: patient.email,
     role: patient.role,
+    labId: 'prathamesh-nashik',
   });
 
   res.status(200).json({
@@ -103,6 +109,7 @@ const login = async (req, res) => {
       id: patient._id,
       fullName: patient.fullName,
       email: patient.email,
+      phone: patient.phone,
       role: patient.role,
     },
   });
