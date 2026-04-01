@@ -112,19 +112,46 @@ export const updatePatient = (id: string, data: {
 export const deletePatient = (id: string) =>
   patientApi.delete(`/api/patients/${id}`);
 
-// ── Tests ──
-export const getAllTests = (params?: { category?: string; sampleType?: string; search?: string }) =>
-  bookingApi.get("/api/tests", { params });
+// ── Tests (patient-service port 3001) ──
+export const getAllTests = (params?: { page?: number; limit?: number; search?: string; category?: string }) =>
+  patientApi.get("/api/tests", { params });
+
+export const getTestCatalog = () =>
+  patientApi.get("/api/tests/catalog");
 
 export const getTestById = (id: string) =>
-  bookingApi.get(`/api/tests/${id}`);
+  patientApi.get(`/api/tests/${id}`);
 
 export const createTest = (data: {
-  name: string; code: string; category: string; sampleType: string;
-  price: number; discountedPrice?: number; turnaroundTime: string;
-  description?: string; preparationInstructions?: string;
-  isHomeCollectionAvailable?: boolean;
-}) => bookingApi.post("/api/tests", data);
+  testName: string; category: string; sampleType: string;
+  price: number; discountedPrice?: number; turnaroundTime: number;
+  description?: string;
+  normalRange?: { male?: string; female?: string; unit?: string };
+}) => patientApi.post("/api/tests", data);
+
+export const updateTest = (id: string, data: Record<string, unknown>) =>
+  patientApi.put(`/api/tests/${id}`, data);
+
+export const deleteTest = (id: string) =>
+  patientApi.delete(`/api/tests/${id}`);
+
+// ── Packages (patient-service port 3001) ──
+export const getAllPackages = () =>
+  patientApi.get("/api/packages");
+
+export const getPackageById = (id: string) =>
+  patientApi.get(`/api/packages/${id}`);
+
+export const createPackage = (data: {
+  packageName: string; description?: string;
+  tests: string[]; discountedPrice?: number;
+}) => patientApi.post("/api/packages", data);
+
+export const updatePackage = (id: string, data: Record<string, unknown>) =>
+  patientApi.put(`/api/packages/${id}`, data);
+
+export const deletePackage = (id: string) =>
+  patientApi.delete(`/api/packages/${id}`);
 
 // ── Bookings ──
 export const createBooking = (data: CreateBookingData) =>

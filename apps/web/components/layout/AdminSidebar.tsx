@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FlaskConical, LayoutDashboard, Users, CalendarCheck, FlaskRound, FileText, CreditCard, LogOut, Microscope, UserCog } from "lucide-react";
+import { FlaskConical, LayoutDashboard, Users, CalendarCheck, FlaskRound, FileText, CreditCard, LogOut, Microscope, UserCog, Package } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 
 const nav = [
@@ -10,6 +10,7 @@ const nav = [
     { href: "/admin/patients", icon: Users, label: "Patients" },
     { href: "/admin/bookings", icon: CalendarCheck, label: "Bookings" },
     { href: "/admin/tests", icon: FlaskRound, label: "Tests" },
+    { href: "/admin/packages", icon: Package, label: "Packages" },
     { href: "/admin/lab", icon: Microscope, label: "Lab" },
     { href: "/admin/reports", icon: FileText, label: "Reports" },
     { href: "/admin/billing", icon: CreditCard, label: "Billing" },

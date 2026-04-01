@@ -8,6 +8,8 @@ const connectDB = require('./config/db');
 const redis = require('./config/redis');
 const authRoutes = require('./routes/auth.routes');
 const patientRoutes = require('./routes/patient.routes');
+const testRoutes = require('./routes/test.routes');
+const packageRoutes = require('./routes/package.routes');
 const errorHandler = require('./middleware/error.middleware');
 
 const app = express();
@@ -28,6 +30,8 @@ app.use(express.urlencoded({ extended: true }));
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/patients', patientRoutes);
+app.use('/api/tests', testRoutes);
+app.use('/api/packages', packageRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
