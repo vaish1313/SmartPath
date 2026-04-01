@@ -1,3 +1,4 @@
+const path = require('path');
 require('dotenv').config({ path: require('path').resolve(__dirname, '../../../.env') });
 require('express-async-errors');
 const express = require('express');
@@ -8,6 +9,8 @@ const connectDB = require('./config/db');
 const redis = require('./config/redis');
 const testRoutes = require('./routes/test.routes');
 const bookingRoutes = require('./routes/booking.routes');
+const sampleRoutes = require('./routes/sample.routes');
+const resultRoutes = require('./routes/result.routes');
 const errorHandler = require('./middleware/error.middleware');
 
 const app = express();
@@ -28,6 +31,11 @@ app.use(express.urlencoded({ extended: true }));
 // Routes
 app.use('/api/tests', testRoutes);
 app.use('/api/bookings', bookingRoutes);
+app.use('/api/samples', sampleRoutes);
+app.use('/api/results', resultRoutes);
+
+// Serve generated PDF reports
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Health check
 app.get('/health', (req, res) => {

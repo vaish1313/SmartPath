@@ -1,80 +1,119 @@
-import Sidebar from "@/components/layout/Sidebar";
-import MobileNav from "@/components/layout/MobileNav";
-import { Download, ArrowLeft, CheckCircle } from "lucide-react";
+"use client";
+
+import { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { getResultById } from "@/lib/api";
+import { ArrowLeft, Loader2, Download, CheckCircle } from "lucide-react";
+import axios from "axios";
 
-export default function ReportDetailPage() {
+interface TestResult { testName?: string; value?: string; unit?: string; normalRange?: { male?: string; female?: string }; status?: string; }
+interface Result {
+    _id: string; resultId: string; patientName?: string;
+    tests?: TestResult[]; approvalStatus?: string; reportUrl?: string; createdAt?: string;
+}
+
+const STATUS_COLOR: Record<string, string> = {
+    normal: "text-teal-600",
+    abnormal: "text-amber-600",
+    critical: "text-red-600",
+};
+
+export default function PatientReportDetailPage() {
+    const params = useParams();
+    const id = params?.id as string;
+    const router = useRouter();
+    const [result, setResult] = useState<Result | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
+
+    useEffect(() => {
+        if (!id) return;
+        getResultById(id)
+            .then((res) => setResult(res.data?.result ?? res.data))
+            .catch((err) => { if (!axios.isAxiosError(err) || err.response?.status !== 401) setError("Report not found"); })
+            .finally(() => setLoading(false));
+    }, [id]);
+
+    if (loading) return <div className="flex-1 flex items-center justify-center py-20"><Loader2 className="w-8 h-8 text-teal-500 animate-spin" /></div>;
+    if (error || !result) return (
+        <div className="flex-1 flex items-center justify-center flex-col gap-3 py-20">
+            <p className="text-slate-500">{error || "Report not found"}</p>
+            <Link href="/reports" className="text-teal-600 text-sm font-semibold">Back to Reports</Link>
+        </div>
+    );
+
     return (
-        <div className="flex min-h-screen bg-slate-50">
-            <Sidebar />
-            <main className="flex-1 p-6 pb-24 lg:pb-6 max-w-3xl">
-                <Link href="/reports" className="inline-flex items-center gap-2 text-slate-500 hover:text-slate-700 text-sm font-medium mb-6 transition-colors">
-                    <ArrowLeft className="w-4 h-4" /> Back to Reports
-                </Link>
-
-                <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 mb-4">
-                    <div className="flex items-start justify-between mb-6">
-                        <div>
-                            <h1 className="text-xl font-bold text-slate-800">Complete Blood Count (CBC)</h1>
-                            <p className="text-slate-400 text-sm mt-1">Booking ID: BK001 · 28 Mar 2026</p>
-                        </div>
-                        <span className="flex items-center gap-1.5 text-xs font-semibold text-teal-700 bg-teal-50 border border-teal-200 px-3 py-1.5 rounded-full">
-                            <CheckCircle className="w-3.5 h-3.5" /> Ready
-                        </span>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4 mb-6">
-                        {[
-                            { label: "Patient", value: "Priya Sharma" },
-                            { label: "Age / Gender", value: "28 yrs / Female" },
-                            { label: "Sample Type", value: "Blood" },
-                            { label: "Collected On", value: "28 Mar 2026, 9:00 AM" },
-                            { label: "Reported On", value: "28 Mar 2026, 5:00 PM" },
-                            { label: "Lab", value: "Prathamesh Diagnostic" },
-                        ].map(({ label, value }) => (
-                            <div key={label} className="bg-slate-50 rounded-xl p-3">
-                                <p className="text-slate-400 text-xs font-medium uppercase tracking-wide">{label}</p>
-                                <p className="text-slate-700 text-sm font-semibold mt-0.5">{value}</p>
-                            </div>
-                        ))}
-                    </div>
-
-                    <div className="border border-slate-100 rounded-xl overflow-hidden">
-                        <table className="w-full text-sm">
-                            <thead>
-                                <tr className="bg-slate-50 border-b border-slate-100">
-                                    {["Parameter", "Result", "Unit", "Reference Range", "Status"].map((h) => (
-                                        <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">{h}</th>
-                                    ))}
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {[
-                                    { param: "Haemoglobin", result: "13.5", unit: "g/dL", range: "12.0 – 16.0", status: "normal" },
-                                    { param: "WBC Count", result: "7200", unit: "cells/μL", range: "4000 – 11000", status: "normal" },
-                                    { param: "Platelet Count", result: "2.8L", unit: "cells/μL", range: "1.5L – 4.5L", status: "normal" },
-                                    { param: "RBC Count", result: "4.6", unit: "million/μL", range: "3.8 – 5.2", status: "normal" },
-                                ].map((row) => (
-                                    <tr key={row.param} className="border-b border-slate-50 hover:bg-slate-50/50">
-                                        <td className="px-4 py-3 text-slate-700 font-medium">{row.param}</td>
-                                        <td className="px-4 py-3 text-slate-800 font-bold">{row.result}</td>
-                                        <td className="px-4 py-3 text-slate-500">{row.unit}</td>
-                                        <td className="px-4 py-3 text-slate-500">{row.range}</td>
-                                        <td className="px-4 py-3">
-                                            <span className="text-[10px] font-semibold text-teal-700 bg-teal-50 border border-teal-200 px-2 py-0.5 rounded-full">Normal</span>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+        <main className="flex-1 p-6 max-w-3xl mx-auto w-full">
+            <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                    <button onClick={() => router.back()} className="w-9 h-9 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-500 hover:text-slate-700 shadow-sm transition-all">
+                        <ArrowLeft className="w-4 h-4" />
+                    </button>
+                    <div>
+                        <h1 className="text-xl font-bold text-slate-800">Test Report</h1>
+                        <p className="text-violet-600 text-xs font-mono font-semibold">{result.resultId}</p>
                     </div>
                 </div>
+                {result.approvalStatus === "approved" && result.reportUrl && (
+                    <a href={`http://localhost:3002${result.reportUrl}`} target="_blank" rel="noreferrer"
+                        className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white font-bold text-sm px-4 py-2.5 rounded-xl transition-all shadow-md shadow-teal-200">
+                        <Download className="w-4 h-4" /> Download PDF
+                    </a>
+                )}
+            </div>
 
-                <button className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white font-bold text-sm px-6 py-3 rounded-xl transition-all shadow-lg shadow-teal-200">
-                    <Download className="w-4 h-4" /> Download PDF Report
-                </button>
-            </main>
-            <MobileNav />
-        </div>
+            {/* Status */}
+            {result.approvalStatus === "approved" && (
+                <div className="flex items-center gap-2 bg-teal-50 border border-teal-200 rounded-xl px-4 py-3 mb-5 text-teal-700 text-sm font-medium">
+                    <CheckCircle className="w-4 h-4 flex-shrink-0" /> Report approved by pathologist
+                </div>
+            )}
+            {result.approvalStatus === "pending" && (
+                <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-5 text-amber-700 text-sm">
+                    Report is pending pathologist review
+                </div>
+            )}
+
+            {/* Results table */}
+            <div className="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden mb-4">
+                <div className="px-5 py-4 border-b border-slate-100">
+                    <p className="text-sm font-bold text-slate-700">Test Results</p>
+                    {result.createdAt && <p className="text-slate-400 text-xs mt-0.5">{new Date(result.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}</p>}
+                </div>
+                <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                        <thead>
+                            <tr className="bg-slate-50 border-b border-slate-100">
+                                {["Test", "Your Value", "Unit", "Normal Range", "Status"].map((h) => (
+                                    <th key={h} className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">{h}</th>
+                                ))}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {(result.tests ?? []).length === 0 ? (
+                                <tr><td colSpan={5} className="px-5 py-8 text-center text-slate-400 text-sm">No results available</td></tr>
+                            ) : (result.tests ?? []).map((t, i) => (
+                                <tr key={i} className="border-b border-slate-50">
+                                    <td className="px-5 py-3.5 text-slate-700 font-medium">{t.testName ?? "—"}</td>
+                                    <td className={`px-5 py-3.5 font-bold ${STATUS_COLOR[t.status ?? "normal"] ?? "text-slate-700"}`}>{t.value ?? "—"}</td>
+                                    <td className="px-5 py-3.5 text-slate-500">{t.unit ?? "—"}</td>
+                                    <td className="px-5 py-3.5 text-slate-500 text-xs">
+                                        {t.normalRange?.male || t.normalRange?.female
+                                            ? `${t.normalRange?.male ?? "—"} / ${t.normalRange?.female ?? "—"}`
+                                            : "—"}
+                                    </td>
+                                    <td className="px-5 py-3.5">
+                                        <span className={`text-[10px] font-semibold px-2.5 py-1 rounded-full border capitalize ${t.status === "normal" ? "bg-teal-50 text-teal-700 border-teal-200" : t.status === "critical" ? "bg-red-50 text-red-600 border-red-200" : "bg-amber-50 text-amber-700 border-amber-200"}`}>
+                                            {t.status ?? "normal"}
+                                        </span>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
     );
 }
