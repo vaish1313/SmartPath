@@ -1,262 +1,186 @@
 const Booking = require('../models/Booking');
-const Test = require('../models/Test');
 const { startOfDay, endOfDay, format } = require('date-fns');
 
+/* ── Create booking ── */
 const createBooking = async (req, res) => {
-  const { patientId, patientName, patientPhone, tests, bookingType, appointmentDate, appointmentSlot, address, notes, paymentMethod } = req.body;
+  const {
+    patientId, patientName, patientPhone,
+    tests = [], packages = [],
+    collectionType, collectionAddress,
+    scheduledDate, scheduledTime,
+    notes, paymentMethod,
+  } = req.body;
 
-  // Validate tests exist
-  const testDocs = await Test.find({ _id: { $in: tests }, isActive: true });
-
-  if (testDocs.length !== tests.length) {
-    console.log('[createBooking] Test mismatch — requested:', tests, 'found:', testDocs.map(t => t._id));
-    return res.status(400).json({
-      success: false,
-      message: `One or more tests are invalid or inactive. Requested ${tests.length}, found ${testDocs.length} active tests.`,
-    });
+  if (!tests.length && !packages.length) {
+    return res.status(400).json({ success: false, message: 'Select at least one test or package' });
   }
 
-  // Calculate amounts
-  const totalAmount = testDocs.reduce((sum, test) => sum + (test.discountedPrice || test.price), 0);
-  let discountAmount = 0;
+  // Calculate total from provided test/package prices
+  const testTotal = tests.reduce((s, t) => s + (t.price || 0), 0);
+  const pkgTotal = packages.reduce((s, p) => s + (p.price || 0), 0);
+  const totalAmount = testTotal + pkgTotal;
+  const finalAmount = totalAmount;
 
-  // Apply 10% discount if more than 3 tests
-  if (testDocs.length > 3) {
-    discountAmount = totalAmount * 0.1;
-  }
-
-  const finalAmount = totalAmount - discountAmount;
-
-  // Prepare test details
-  const testDetails = testDocs.map((test) => ({
-    testId: test._id,
-    testName: test.name,
-    testCode: test.code,
-    price: test.discountedPrice || test.price,
-  }));
-
-  // Create booking
   const booking = await Booking.create({
-    patientId,
-    patientName,
-    patientPhone,
-    tests: testDetails,
-    totalAmount,
-    discountAmount,
-    finalAmount,
-    bookingType,
-    appointmentDate: new Date(appointmentDate),
-    appointmentSlot,
-    address,
-    notes,
-    paymentMethod,
+    patientId, patientName, patientPhone,
+    tests, packages,
+    totalAmount, discountAmount: 0, finalAmount,
+    collectionType,
+    collectionAddress: collectionType === 'home-collection' ? collectionAddress : undefined,
+    scheduledDate: new Date(scheduledDate),
+    scheduledTime,
+    notes, paymentMethod,
   });
 
-  res.status(201).json({
-    success: true,
-    booking,
-  });
+  res.status(201).json({ success: true, booking });
 };
 
+/* ── Get all bookings (staff) ── */
+const getAllBookings = async (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 15;
+  const { status, collectionType, date, search } = req.query;
+
+  const query = {};
+  if (status && status !== 'all') query.status = status;
+  if (collectionType) query.collectionType = collectionType;
+  if (search) {
+    query.$or = [
+      { patientName: { $regex: search, $options: 'i' } },
+      { patientPhone: { $regex: search, $options: 'i' } },
+      { bookingId: { $regex: search, $options: 'i' } },
+    ];
+  }
+  if (date) {
+    const d = new Date(date);
+    query.scheduledDate = { $gte: startOfDay(d), $lte: endOfDay(d) };
+  }
+
+  const skip = (page - 1) * limit;
+  const [bookings, total] = await Promise.all([
+    Booking.find(query).skip(skip).limit(limit).sort({ createdAt: -1 }),
+    Booking.countDocuments(query),
+  ]);
+
+  res.json({ success: true, bookings, total, page, totalPages: Math.ceil(total / limit) });
+};
+
+/* ── Get bookings for a specific patient ── */
+const getPatientBookings = async (req, res) => {
+  const { patientId } = req.params;
+
+  // Patients can only see their own
+  if (req.user.role === 'patient' && req.user.id !== patientId) {
+    return res.status(403).json({ success: false, message: 'Access denied' });
+  }
+
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
+  const skip = (page - 1) * limit;
+
+  const [bookings, total] = await Promise.all([
+    Booking.find({ patientId }).skip(skip).limit(limit).sort({ createdAt: -1 }),
+    Booking.countDocuments({ patientId }),
+  ]);
+
+  res.json({ success: true, bookings, total, page, totalPages: Math.ceil(total / limit) });
+};
+
+/* ── My bookings (patient) ── */
 const getMyBookings = async (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 10;
   const skip = (page - 1) * limit;
 
-  const query = { patientId: req.user.id };
-
   const [bookings, total] = await Promise.all([
-    Booking.find(query).skip(skip).limit(limit).sort({ createdAt: -1 }),
-    Booking.countDocuments(query),
+    Booking.find({ patientId: req.user.id }).skip(skip).limit(limit).sort({ createdAt: -1 }),
+    Booking.countDocuments({ patientId: req.user.id }),
   ]);
 
-  const totalPages = Math.ceil(total / limit);
-
-  res.status(200).json({
-    success: true,
-    bookings,
-    total,
-    page,
-    totalPages,
-  });
+  res.json({ success: true, bookings, total, page, totalPages: Math.ceil(total / limit) });
 };
 
+/* ── Get single booking ── */
 const getBookingById = async (req, res) => {
   const booking = await Booking.findById(req.params.id);
+  if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
 
-  if (!booking) {
-    return res.status(404).json({
-      success: false,
-      message: 'Booking not found',
-    });
-  }
-
-  // Patient can only see their own booking
   if (req.user.role === 'patient' && booking.patientId !== req.user.id) {
-    return res.status(403).json({
-      success: false,
-      message: 'Access denied',
-    });
+    return res.status(403).json({ success: false, message: 'Access denied' });
   }
 
-  res.status(200).json({
-    success: true,
-    booking,
-  });
+  res.json({ success: true, booking });
 };
 
+/* ── Update status ── */
 const updateBookingStatus = async (req, res) => {
   const { status } = req.body;
-
-  const booking = await Booking.findByIdAndUpdate(
-    req.params.id,
-    { status },
-    { new: true, runValidators: true }
-  );
-
-  if (!booking) {
-    return res.status(404).json({
-      success: false,
-      message: 'Booking not found',
-    });
-  }
-
-  res.status(200).json({
-    success: true,
-    booking,
-  });
+  const booking = await Booking.findByIdAndUpdate(req.params.id, { status }, { new: true, runValidators: true });
+  if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
+  res.json({ success: true, booking });
 };
 
+/* ── Assign technician ── */
+const assignTechnician = async (req, res) => {
+  const { technicianId } = req.body;
+  const booking = await Booking.findByIdAndUpdate(req.params.id, { assignedTechnician: technicianId }, { new: true });
+  if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
+  res.json({ success: true, booking });
+};
+
+/* ── Cancel booking ── */
 const cancelBooking = async (req, res) => {
   const booking = await Booking.findById(req.params.id);
+  if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
 
-  if (!booking) {
-    return res.status(404).json({
-      success: false,
-      message: 'Booking not found',
-    });
+  if (req.user.role === 'patient' && booking.patientId !== req.user.id) {
+    return res.status(403).json({ success: false, message: 'Access denied' });
   }
-
-  // Patient can only cancel their own booking
-  if (booking.patientId !== req.user.id) {
-    return res.status(403).json({
-      success: false,
-      message: 'Access denied',
-    });
-  }
-
-  // Can only cancel if status is pending or confirmed
   if (!['pending', 'confirmed'].includes(booking.status)) {
-    return res.status(400).json({
-      success: false,
-      message: 'Cannot cancel booking in current status',
-    });
+    return res.status(400).json({ success: false, message: 'Cannot cancel booking in current status' });
   }
 
   booking.status = 'cancelled';
   await booking.save();
-
-  res.status(200).json({
-    success: true,
-    message: 'Booking cancelled successfully',
-    booking,
-  });
+  res.json({ success: true, message: 'Booking cancelled', booking });
 };
 
-const getAllBookings = async (req, res) => {
-  const page = parseInt(req.query.page) || 1;
-  const limit = parseInt(req.query.limit) || 10;
-  const { status, bookingType, date, patientPhone } = req.query;
-
-  const query = {};
-  if (status) query.status = status;
-  if (bookingType) query.bookingType = bookingType;
-  if (patientPhone) query.patientPhone = { $regex: patientPhone, $options: 'i' };
-  if (date) {
-    const searchDate = new Date(date);
-    query.appointmentDate = {
-      $gte: startOfDay(searchDate),
-      $lte: endOfDay(searchDate),
-    };
-  }
-
-  const skip = (page - 1) * limit;
-
-  const [bookings, total] = await Promise.all([
-    Booking.find(query).skip(skip).limit(limit).sort({ createdAt: -1 }),
-    Booking.countDocuments(query),
-  ]);
-
-  const totalPages = Math.ceil(total / limit);
-
-  res.status(200).json({
-    success: true,
-    bookings,
-    total,
-    page,
-    totalPages,
-  });
-};
-
+/* ── Available slots ── */
 const getAvailableSlots = async (req, res) => {
   const { date } = req.query;
-
-  if (!date) {
-    return res.status(400).json({
-      success: false,
-      message: 'Date is required',
-    });
-  }
+  if (!date) return res.status(400).json({ success: false, message: 'Date is required' });
 
   const searchDate = new Date(date);
-
-  // Generate slots from 7 AM to 6 PM
   const slots = [];
-  for (let hour = 7; hour <= 18; hour++) {
-    const startHour = hour % 12 || 12;
-    const endHour = (hour + 1) % 12 || 12;
-    const startPeriod = hour < 12 ? 'AM' : 'PM';
-    const endPeriod = (hour + 1) < 12 ? 'AM' : 'PM';
-    
-    const slotString = `${String(startHour).padStart(2, '0')}:00 ${startPeriod} - ${String(endHour).padStart(2, '0')}:00 ${endPeriod}`;
-    slots.push(slotString);
+
+  // 7 AM – 7 PM, every 30 mins
+  for (let h = 7; h < 19; h++) {
+    for (let m = 0; m < 60; m += 30) {
+      const hour12 = h % 12 || 12;
+      const period = h < 12 ? 'AM' : 'PM';
+      const mStr = m === 0 ? '00' : '30';
+      slots.push(`${String(hour12).padStart(2, '0')}:${mStr} ${period}`);
+    }
   }
 
-  // Get bookings for the date
   const bookings = await Booking.find({
-    appointmentDate: {
-      $gte: startOfDay(searchDate),
-      $lte: endOfDay(searchDate),
-    },
+    scheduledDate: { $gte: startOfDay(searchDate), $lte: endOfDay(searchDate) },
     status: { $nin: ['cancelled'] },
   });
 
-  // Count bookings per slot
   const slotCounts = {};
-  bookings.forEach((booking) => {
-    slotCounts[booking.appointmentSlot] = (slotCounts[booking.appointmentSlot] || 0) + 1;
-  });
+  bookings.forEach((b) => { slotCounts[b.scheduledTime] = (slotCounts[b.scheduledTime] || 0) + 1; });
 
-  // Mark slots as available or unavailable
-  const availableSlots = slots.map((slot) => ({
+  const result = slots.map((slot) => ({
     slot,
     available: (slotCounts[slot] || 0) < 10,
-    bookingsCount: slotCounts[slot] || 0,
+    count: slotCounts[slot] || 0,
   }));
 
-  res.status(200).json({
-    success: true,
-    date: format(searchDate, 'yyyy-MM-dd'),
-    slots: availableSlots,
-  });
+  res.json({ success: true, date: format(searchDate, 'yyyy-MM-dd'), slots: result });
 };
 
 module.exports = {
-  createBooking,
-  getMyBookings,
-  getBookingById,
-  updateBookingStatus,
-  cancelBooking,
-  getAllBookings,
-  getAvailableSlots,
+  createBooking, getAllBookings, getPatientBookings, getMyBookings,
+  getBookingById, updateBookingStatus, assignTechnician, cancelBooking, getAvailableSlots,
 };

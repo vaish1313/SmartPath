@@ -1,24 +1,25 @@
 const express = require('express');
 const {
-  createBooking,
-  getMyBookings,
-  getBookingById,
-  updateBookingStatus,
-  cancelBooking,
-  getAllBookings,
-  getAvailableSlots,
+  createBooking, getAllBookings, getPatientBookings, getMyBookings,
+  getBookingById, updateBookingStatus, assignTechnician, cancelBooking, getAvailableSlots,
 } = require('../controllers/booking.controller');
 const { authMiddleware, authorizeRoles } = require('../middleware/auth.middleware');
-const { validate, createBookingSchema, updateBookingStatusSchema } = require('../validators/booking.validator');
 
 const router = express.Router();
 
-router.post('/', authMiddleware, validate(createBookingSchema), createBooking);
-router.get('/my', authMiddleware, getMyBookings);
+// Public slot check (no auth needed for date picker)
 router.get('/slots', getAvailableSlots);
-router.get('/:id', authMiddleware, getBookingById);
-router.put('/:id/status', authMiddleware, authorizeRoles('admin', 'technician', 'pathologist'), validate(updateBookingStatusSchema), updateBookingStatus);
-router.delete('/:id', authMiddleware, cancelBooking);
-router.get('/', authMiddleware, authorizeRoles('admin', 'technician'), getAllBookings);
+
+// All other routes require auth
+router.use(authMiddleware);
+
+router.post('/', authorizeRoles('admin', 'receptionist', 'patient'), createBooking);
+router.get('/', authorizeRoles('admin', 'receptionist', 'technician', 'pathologist'), getAllBookings);
+router.get('/my', getMyBookings);
+router.get('/patient/:patientId', getPatientBookings);
+router.get('/:id', getBookingById);
+router.put('/:id/status', authorizeRoles('admin', 'receptionist', 'technician', 'pathologist'), updateBookingStatus);
+router.put('/:id/assign', authorizeRoles('admin', 'receptionist'), assignTechnician);
+router.delete('/:id', authorizeRoles('admin'), cancelBooking);
 
 module.exports = router;

@@ -154,20 +154,38 @@ export const deletePackage = (id: string) =>
   patientApi.delete(`/api/packages/${id}`);
 
 // ── Bookings ──
-export const createBooking = (data: CreateBookingData) =>
-  bookingApi.post("/api/bookings", data);
+export const createBooking = (data: {
+  patientId: string; patientName: string; patientPhone: string;
+  tests?: { testId: string; testName: string; testCode?: string; price: number }[];
+  packages?: { packageId: string; packageName: string; price: number }[];
+  collectionType: "walk-in" | "home-collection";
+  collectionAddress?: { street?: string; city?: string; state?: string; pincode?: string };
+  scheduledDate: string; scheduledTime: string;
+  notes?: string; paymentMethod?: "cash" | "online" | "insurance";
+}) => bookingApi.post("/api/bookings", data);
+
+export const getAllBookings = (params?: {
+  page?: number; limit?: number; status?: string;
+  date?: string; search?: string; collectionType?: string;
+}) => bookingApi.get("/api/bookings", { params });
 
 export const getMyBookings = (page = 1, limit = 10) =>
   bookingApi.get("/api/bookings/my", { params: { page, limit } });
 
+export const getPatientBookings = (patientId: string, page = 1, limit = 10) =>
+  bookingApi.get(`/api/bookings/patient/${patientId}`, { params: { page, limit } });
+
 export const getBookingById = (id: string) =>
   bookingApi.get(`/api/bookings/${id}`);
+
+export const updateBookingStatus = (id: string, status: string) =>
+  bookingApi.put(`/api/bookings/${id}/status`, { status });
+
+export const assignTechnician = (id: string, technicianId: string) =>
+  bookingApi.put(`/api/bookings/${id}/assign`, { technicianId });
 
 export const cancelBooking = (id: string) =>
   bookingApi.delete(`/api/bookings/${id}`);
 
 export const getAvailableSlots = (date: string) =>
   bookingApi.get("/api/bookings/slots", { params: { date } });
-
-export const getAllBookings = (params?: { page?: number; limit?: number; status?: string; date?: string }) =>
-  bookingApi.get("/api/bookings", { params });
