@@ -83,7 +83,7 @@ export const getMe = () =>
 export const logoutUser = () =>
   patientApi.post("/api/auth/logout");
 
-// ── Patient ──
+// ── Patient (staff) ──
 export const getProfile = () =>
   patientApi.get("/api/patients/profile");
 
@@ -93,12 +93,38 @@ export const updateProfile = (data: UpdateProfileData) =>
 export const getAllPatients = (params?: { page?: number; limit?: number; search?: string }) =>
   patientApi.get("/api/patients", { params });
 
+export const getPatientById = (id: string) =>
+  patientApi.get(`/api/patients/${id}`);
+
+export const createPatient = (data: {
+  fullName: string; email: string; phone: string; password?: string;
+  gender?: string; dateOfBirth?: string; bloodGroup?: string;
+  address?: { street?: string; city?: string; state?: string; pincode?: string };
+}) => patientApi.post("/api/patients", data);
+
+export const updatePatient = (id: string, data: {
+  fullName?: string; phone?: string; dateOfBirth?: string; gender?: string;
+  bloodGroup?: string;
+  address?: { street?: string; city?: string; state?: string; pincode?: string };
+  medicalHistory?: { condition: string; diagnosedDate?: string; notes?: string }[];
+}) => patientApi.put(`/api/patients/${id}`, data);
+
+export const deletePatient = (id: string) =>
+  patientApi.delete(`/api/patients/${id}`);
+
 // ── Tests ──
 export const getAllTests = (params?: { category?: string; sampleType?: string; search?: string }) =>
   bookingApi.get("/api/tests", { params });
 
 export const getTestById = (id: string) =>
   bookingApi.get(`/api/tests/${id}`);
+
+export const createTest = (data: {
+  name: string; code: string; category: string; sampleType: string;
+  price: number; discountedPrice?: number; turnaroundTime: string;
+  description?: string; preparationInstructions?: string;
+  isHomeCollectionAvailable?: boolean;
+}) => bookingApi.post("/api/tests", data);
 
 // ── Bookings ──
 export const createBooking = (data: CreateBookingData) =>
