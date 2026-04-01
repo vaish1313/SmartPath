@@ -1,20 +1,11 @@
 import axios from "axios";
 
 export interface RegisterData {
-  fullName: string;
-  email: string;
-  phone: string;
-  password: string;
-  gender?: string;
-  dateOfBirth?: string;
-  role?: string;
+  fullName: string; email: string; phone: string; password: string;
+  gender?: string; dateOfBirth?: string; role?: string;
 }
-
 export interface UpdateProfileData {
-  fullName?: string;
-  phone?: string;
-  dateOfBirth?: string;
-  gender?: string;
+  fullName?: string; phone?: string; dateOfBirth?: string; gender?: string;
   address?: { street?: string; city?: string; state?: string; pincode?: string };
 }
 
@@ -101,3 +92,13 @@ export const getPatientResults = (patientId: string) => bookingApi.get(`/api/res
 export const approveResult = (id: string) => bookingApi.put(`/api/results/${id}/approve`);
 export const rejectResult = (id: string, rejectionNote: string) => bookingApi.put(`/api/results/${id}/reject`, { rejectionNote });
 export const generateReport = (id: string) => bookingApi.post(`/api/results/${id}/generate-report`);
+
+// ── Invoices ──
+export const createInvoice = (data: { bookingId: string; discount?: { type: "flat" | "percent"; value: number; reason?: string }; notes?: string; gstRate?: number }) => bookingApi.post("/api/invoices", data);
+export const getAllInvoices = (params?: { page?: number; limit?: number; paymentStatus?: string; search?: string; startDate?: string; endDate?: string }) => bookingApi.get("/api/invoices", { params });
+export const getInvoiceById = (id: string) => bookingApi.get(`/api/invoices/${id}`);
+export const getInvoiceByBooking = (bookingId: string) => bookingApi.get(`/api/invoices/booking/${bookingId}`);
+export const getPatientInvoices = (patientId: string) => bookingApi.get(`/api/invoices/patient/${patientId}`);
+export const updateInvoice = (id: string, data: Record<string, unknown>) => bookingApi.put(`/api/invoices/${id}`, data);
+export const recordPayment = (id: string, data: { amount: number; method: string; transactionId?: string }) => bookingApi.post(`/api/invoices/${id}/payment`, data);
+export const generateInvoicePdf = (id: string) => bookingApi.post(`/api/invoices/${id}/generate-pdf`);

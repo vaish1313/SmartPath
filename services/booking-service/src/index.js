@@ -11,6 +11,7 @@ const testRoutes = require('./routes/test.routes');
 const bookingRoutes = require('./routes/booking.routes');
 const sampleRoutes = require('./routes/sample.routes');
 const resultRoutes = require('./routes/result.routes');
+const invoiceRoutes = require('./routes/invoice.routes');
 const errorHandler = require('./middleware/error.middleware');
 
 const app = express();
@@ -33,6 +34,7 @@ app.use('/api/tests', testRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/samples', sampleRoutes);
 app.use('/api/results', resultRoutes);
+app.use('/api/invoices', invoiceRoutes);
 
 // Serve generated PDF reports
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
