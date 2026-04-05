@@ -12,12 +12,17 @@ const bookingRoutes = require('./routes/booking.routes');
 const sampleRoutes = require('./routes/sample.routes');
 const resultRoutes = require('./routes/result.routes');
 const invoiceRoutes = require('./routes/invoice.routes');
+const paymentRoutes = require('./routes/payment.routes');
 const errorHandler = require('./middleware/error.middleware');
 
 const app = express();
 
 // Connect to databases
 connectDB();
+
+// ── Webhook MUST be registered before express.json() ──
+// Razorpay signature verification requires the raw body buffer
+app.use('/api/payments/webhook', express.raw({ type: 'application/json' }));
 
 // Middleware
 app.use(helmet());
@@ -35,6 +40,7 @@ app.use('/api/bookings', bookingRoutes);
 app.use('/api/samples', sampleRoutes);
 app.use('/api/results', resultRoutes);
 app.use('/api/invoices', invoiceRoutes);
+app.use('/api/payments', paymentRoutes);
 
 // Serve generated PDF reports
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));

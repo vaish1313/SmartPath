@@ -82,7 +82,7 @@ export default function BookingDetailPage() {
         getAllPatients({ limit: 100 })
             .then((res) => {
                 const all: { _id: string; fullName: string; role: string }[] = res.data?.patients || [];
-                setTechnicians(all.filter((p) => ["technician", "pathologist"].includes(p.role)));
+                setTechnicians(all.filter((p) => ["lab_technician", "pathologist"].includes(p.role)));
             })
             .catch(() => { /* non-critical */ });
     }, [id]);

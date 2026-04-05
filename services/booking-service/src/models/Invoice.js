@@ -43,6 +43,15 @@ const invoiceSchema = new mongoose.Schema(
     balanceAmount: { type: Number, default: 0 },
     notes: { type: String, trim: true },
     pdfUrl: { type: String },
+    // Razorpay payment fields
+    razorpayOrderId: { type: String },
+    razorpayPaymentId: { type: String },
+    paymentMethod: {
+      type: String,
+      enum: ['cash', 'online', 'card', 'upi'],
+      default: 'cash',
+    },
+    paidAt: { type: Date },
   },
   { timestamps: true }
 );

@@ -8,6 +8,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Eye, EyeOff, FlaskConical, ArrowRight, Loader2, Check } from "lucide-react";
 import { registerUser } from "@/lib/api";
+import { useAuthStore } from "@/store/authStore";
+import { signIn } from "next-auth/react";
 import axios from "axios";
 
 const schema = z.object({
@@ -34,6 +36,7 @@ export default function RegisterPage() {
     const [apiError, setApiError] = useState("");
     const [successMsg, setSuccessMsg] = useState("");
     const router = useRouter();
+    const login = useAuthStore((s) => s.login);
 
     const { register, handleSubmit, trigger, watch, formState: { errors, isSubmitting } } =
         useForm<FormData>({ resolver: zodResolver(schema), mode: "onTouched" });
@@ -42,6 +45,7 @@ export default function RegisterPage() {
 
     const handleGoogleSignUp = async () => {
         setGoogleLoading(true);
+        await signIn("google", { callbackUrl: "/portal" });
         setGoogleLoading(false);
     };
 
@@ -54,10 +58,11 @@ export default function RegisterPage() {
     const onSubmit = async (data: FormData) => {
         setApiError("");
         try {
-            // role is always "patient" for public registration
-            await registerUser({ fullName: data.fullName, email: data.email, phone: data.phone, password: data.password, gender: data.gender, dateOfBirth: data.dateOfBirth, role: "patient" });
-            setSuccessMsg("Account created! Redirecting to login...");
-            setTimeout(() => router.push("/login"), 1500);
+            const res = await registerUser({ fullName: data.fullName, email: data.email, phone: data.phone, password: data.password, gender: data.gender, dateOfBirth: data.dateOfBirth, role: "patient" });
+            const { token, patient } = res.data;
+            login(patient, token);
+            setSuccessMsg("Account created! Taking you to your dashboard...");
+            setTimeout(() => router.push("/dashboard"), 800);
         } catch (err) {
             if (axios.isAxiosError(err)) {
                 if (!err.response) setApiError("Unable to connect. Please try again.");

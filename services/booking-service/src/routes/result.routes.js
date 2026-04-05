@@ -8,10 +8,10 @@ const { authMiddleware, authorizeRoles } = require('../middleware/auth.middlewar
 const router = express.Router();
 router.use(authMiddleware);
 
-const STAFF = ['admin', 'technician', 'pathologist', 'receptionist'];
+const STAFF = ['admin', 'lab_technician', 'pathologist', 'receptionist'];
 
 // POST /api/results
-router.post('/', authorizeRoles('admin', 'technician'), async (req, res) => {
+router.post('/', authorizeRoles('admin', 'lab_technician'), async (req, res) => {
   const { bookingId, sampleId, patientId, patientName, tests } = req.body;
   const result = await Result.create({
     bookingId, sampleId, patientId, patientName,
@@ -82,7 +82,7 @@ router.put('/:id/reject', authorizeRoles('admin', 'pathologist'), async (req, re
 });
 
 // POST /api/results/:id/generate-report
-router.post('/:id/generate-report', authorizeRoles('admin', 'pathologist', 'technician'), async (req, res) => {
+router.post('/:id/generate-report', authorizeRoles('admin', 'pathologist', 'lab_technician'), async (req, res) => {
   const result = await Result.findById(req.params.id);
   if (!result) return res.status(404).json({ success: false, message: 'Result not found' });
 

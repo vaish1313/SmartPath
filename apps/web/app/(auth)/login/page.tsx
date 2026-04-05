@@ -10,6 +10,7 @@ import { Eye, EyeOff, FlaskConical, ArrowRight, Loader2 } from "lucide-react";
 import { loginUser } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
 import axios from "axios";
+import { signIn } from "next-auth/react"
 
 const schema = z.object({
     email: z.string().email("Enter a valid email"),
@@ -30,6 +31,7 @@ export default function LoginPage() {
 
     const handleGoogleSignIn = async () => {
         setGoogleLoading(true);
+        await signIn("google", { callbackUrl: "/portal" });
         setGoogleLoading(false);
     };
 
@@ -40,10 +42,9 @@ export default function LoginPage() {
             const { token, patient } = res.data;
             login(patient, token);
             const role = patient.role;
-            // Role-specific dashboard redirects
-            if (role === "admin") router.push("/dashboard/admin");
-            else if (role === "technician" || role === "pathologist") router.push("/dashboard/lab");
-            else if (role === "receptionist") router.push("/dashboard/receptionist");
+            if (role === "admin") router.push("/admin");
+            else if (role === "lab_technician" || role === "pathologist") router.push("/admin/lab");
+            else if (role === "receptionist") router.push("/admin/bookings");
             else router.push("/portal");
         } catch (err) {
             if (axios.isAxiosError(err)) {

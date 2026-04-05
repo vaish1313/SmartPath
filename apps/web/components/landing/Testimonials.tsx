@@ -1,7 +1,23 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useEffect, useState } from "react";
 import { Star } from "lucide-react";
+import { getReviews } from "@/lib/api";
+
+interface Review {
+    patientName: string;
+    rating: number;
+    review: string;
+    createdAt: string;
+}
+
+const FALLBACK_REVIEWS: Review[] = [
+    { patientName: "Priya Sharma", rating: 5, review: "Booked a CBC test at 11pm and got my report by noon next day. The portal is incredibly smooth.", createdAt: "" },
+    { patientName: "Rahul Deshmukh", rating: 5, review: "I track my HbA1c every 3 months. SmartPath makes it so easy — one click and the report is on my phone.", createdAt: "" },
+    { patientName: "Sunita Joshi", rating: 5, review: "Even at my age I could use it easily. The WhatsApp report notification is very convenient.", createdAt: "" },
+    { patientName: "Amit Patil", rating: 5, review: "Excellent service. Reports were accurate and delivered on time. Highly recommend SmartPath.", createdAt: "" },
+    { patientName: "Meera Kulkarni", rating: 5, review: "The home collection feature is a lifesaver. No more waiting at the lab. Brilliant experience.", createdAt: "" },
+];
 
 function Badge({ children }: { children: React.ReactNode }) {
     return (
@@ -12,19 +28,23 @@ function Badge({ children }: { children: React.ReactNode }) {
     );
 }
 
-const reviews = [
-    { name: "Priya Sharma", role: "Patient", review: "Booked a CBC test at 11pm and got my report by noon next day. The portal is incredibly smooth.", rating: 5 },
-    { name: "Rahul Deshmukh", role: "Diabetic patient", review: "I track my HbA1c every 3 months. SmartPath makes it so easy — one click and the report is on my phone.", rating: 5 },
-    { name: "Sunita Joshi", role: "Senior patient", review: "Even at my age I could use it easily. The WhatsApp report notification is very convenient.", rating: 5 },
-    { name: "Amit Patil", role: "Patient", review: "Excellent service. Reports were accurate and delivered on time. Highly recommend SmartPath.", rating: 5 },
-    { name: "Meera Kulkarni", role: "Regular patient", review: "The home collection feature is a lifesaver. No more waiting at the lab. Brilliant experience.", rating: 5 },
-];
-
-// Duplicate for seamless loop
-const allReviews = [...reviews, ...reviews];
-
 export default function Testimonials() {
     const trackRef = useRef<HTMLDivElement>(null);
+    const [reviews, setReviews] = useState<Review[]>(FALLBACK_REVIEWS);
+
+    useEffect(() => {
+        getReviews(30)
+            .then((res) => {
+                const fetched: Review[] = res.data.reviews || [];
+                if (fetched.length > 0) setReviews(fetched);
+            })
+            .catch(() => { /* keep fallback */ });
+    }, []);
+
+    // Duplicate for seamless loop
+    const allReviews = reviews.length < 5
+        ? [...reviews, ...reviews, ...reviews]
+        : [...reviews, ...reviews];
 
     return (
         <section className="py-24 px-6 lg:px-16 bg-slate-50 overflow-hidden">
@@ -39,7 +59,6 @@ export default function Testimonials() {
                     </h2>
                 </div>
 
-                {/* Carousel track */}
                 <div
                     className="overflow-hidden"
                     onMouseEnter={() => { if (trackRef.current) trackRef.current.style.animationPlayState = "paused"; }}
@@ -50,9 +69,9 @@ export default function Testimonials() {
                         className="flex gap-5"
                         style={{ animation: "testimonialScroll 28s linear infinite", width: "max-content" }}
                     >
-                        {allReviews.map(({ name, role, review, rating }, i) => (
+                        {allReviews.map(({ patientName, rating, review }, i) => (
                             <div
-                                key={`${name}-${i}`}
+                                key={`${patientName}-${i}`}
                                 className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow duration-300 flex-shrink-0"
                                 style={{ width: "320px" }}
                             >
@@ -64,11 +83,11 @@ export default function Testimonials() {
                                 <p className="text-slate-600 text-sm leading-relaxed mb-5">"{review}"</p>
                                 <div className="flex items-center gap-3">
                                     <div className="w-9 h-9 rounded-full bg-teal-100 ring-2 ring-teal-400 flex items-center justify-center text-teal-700 font-bold text-sm">
-                                        {name[0]}
+                                        {patientName[0]}
                                     </div>
                                     <div>
-                                        <p className="text-slate-800 text-sm font-semibold">{name}</p>
-                                        <p className="text-slate-400 text-xs">{role}</p>
+                                        <p className="text-slate-800 text-sm font-semibold">{patientName}</p>
+                                        <p className="text-slate-400 text-xs">Patient</p>
                                     </div>
                                 </div>
                             </div>

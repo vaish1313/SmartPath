@@ -59,7 +59,7 @@ const patientSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ['patient', 'technician', 'pathologist', 'admin', 'receptionist'],
+      enum: ['patient', 'lab_technician', 'pathologist', 'admin', 'receptionist'],
       default: 'patient',
     },
     isVerified: { type: Boolean, default: false },

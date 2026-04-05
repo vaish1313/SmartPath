@@ -6,10 +6,10 @@ const { startOfDay, endOfDay } = require('date-fns');
 const router = express.Router();
 router.use(authMiddleware);
 
-const STAFF = ['admin', 'technician', 'pathologist', 'receptionist'];
+const STAFF = ['admin', 'lab_technician', 'pathologist', 'receptionist'];
 
 // POST /api/samples
-router.post('/', authorizeRoles('admin', 'technician', 'receptionist'), async (req, res) => {
+router.post('/', authorizeRoles('admin', 'lab_technician', 'receptionist'), async (req, res) => {
   const { bookingId, patientId, patientName } = req.body;
   const sample = await Sample.create({
     bookingId, patientId, patientName,
@@ -52,7 +52,7 @@ router.get('/:id', authorizeRoles(...STAFF), async (req, res) => {
 });
 
 // PUT /api/samples/:id/status
-router.put('/:id/status', authorizeRoles('admin', 'technician'), async (req, res) => {
+router.put('/:id/status', authorizeRoles('admin', 'lab_technician'), async (req, res) => {
   const { status, rejectionReason } = req.body;
   const update = { status };
   if (status === 'rejected' && rejectionReason) update.rejectionReason = rejectionReason;

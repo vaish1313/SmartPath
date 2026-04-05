@@ -10,6 +10,8 @@ const authRoutes = require('./routes/auth.routes');
 const patientRoutes = require('./routes/patient.routes');
 const testRoutes = require('./routes/test.routes');
 const packageRoutes = require('./routes/package.routes');
+const userRoutes = require('./routes/user.routes');
+const reviewRoutes = require('./routes/review.routes');
 const errorHandler = require('./middleware/error.middleware');
 
 const app = express();
@@ -32,6 +34,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/patients', patientRoutes);
 app.use('/api/tests', testRoutes);
 app.use('/api/packages', packageRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/reviews', reviewRoutes);
 
 // Health check
 app.get('/health', (req, res) => {

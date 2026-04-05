@@ -93,25 +93,62 @@ export default function NewBookingPage() {
 
     const handleSubmit = async () => {
         if (!selectedPatient) return;
+
+        // Pre-submit validation
+        if (selectedTests.length === 0 && selectedPackages.length === 0) {
+            setError("Please select at least one test or package.");
+            return;
+        }
+        if (!collectionType) {
+            setError("Please select a collection type.");
+            return;
+        }
+        if (!selectedDate) {
+            setError("Please select a date.");
+            return;
+        }
+        const parsedDate = new Date(selectedDate);
+        if (isNaN(parsedDate.getTime())) {
+            setError("Please select a valid date.");
+            return;
+        }
+        if (!selectedSlot) {
+            setError("Please select a time slot.");
+            return;
+        }
+
         setSubmitting(true); setError("");
         try {
             const res = await createBooking({
                 patientId: selectedPatient._id,
                 patientName: selectedPatient.fullName,
-                patientPhone: selectedPatient.phone,
-                tests: selectedTests.map((t) => ({ testId: t._id, testName: t.testName, testCode: t.testCode, price: t.discountedPrice ?? t.price })),
-                packages: selectedPackages.map((p) => ({ packageId: p._id, packageName: p.packageName, price: p.discountedPrice ?? p.originalPrice })),
+                patientPhone: selectedPatient.phone || "",
+                tests: selectedTests.map((t) => ({
+                    testId: t._id,
+                    testName: t.testName,
+                    testCode: t.testCode,
+                    price: t.discountedPrice ?? t.price,
+                })),
+                packages: selectedPackages.map((p) => ({
+                    packageId: p._id,
+                    packageName: p.packageName,
+                    price: p.discountedPrice ?? p.originalPrice,
+                })),
                 collectionType,
                 collectionAddress: collectionType === "home-collection" ? address : undefined,
-                scheduledDate: selectedDate,
+                scheduledDate: parsedDate.toISOString(),
                 scheduledTime: selectedSlot,
                 paymentMethod: "cash",
             });
             setBookingId(res.data.booking?.bookingId || "");
             setSuccess(true);
         } catch (err) {
-            if (axios.isAxiosError(err)) setError(err.response?.data?.message || "Booking failed");
-            else setError("Something went wrong.");
+            if (axios.isAxiosError(err)) {
+                const msg = err.response?.data?.message || err.response?.data?.errors?.[0]?.message || "Booking failed. Please check all fields.";
+                setError(msg);
+            } else {
+                setError("Something went wrong.");
+            }
         } finally { setSubmitting(false); }
     };
 

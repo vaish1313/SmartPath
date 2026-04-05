@@ -97,14 +97,15 @@ router.get('/', authorizeRoles(...STAFF), async (req, res) => {
 router.get('/booking/:bookingId', async (req, res) => {
   const invoice = await Invoice.findOne({ bookingId: req.params.bookingId });
   if (!invoice) return res.status(404).json({ success: false, message: 'Invoice not found' });
-  if (req.user.role === 'patient' && invoice.patientId !== req.user.id)
+  // Compare as strings to handle ObjectId vs string mismatch
+  if (req.user.role === 'patient' && String(invoice.patientId) !== String(req.user.id))
     return res.status(403).json({ success: false, message: 'Access denied' });
   res.json({ success: true, invoice });
 });
 
 /* ── GET /api/invoices/patient/:patientId ── */
 router.get('/patient/:patientId', async (req, res) => {
-  if (req.user.role === 'patient' && req.user.id !== req.params.patientId)
+  if (req.user.role === 'patient' && String(req.user.id) !== String(req.params.patientId))
     return res.status(403).json({ success: false, message: 'Access denied' });
   const invoices = await Invoice.find({ patientId: req.params.patientId }).sort({ createdAt: -1 });
   res.json({ success: true, invoices });

@@ -6,7 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import LoadingSpinner from "@/components/shared/LoadingSpinner";
 import AdminSidebar from "@/components/layout/AdminSidebar";
 
-const STAFF_ROLES = ["admin", "technician", "pathologist", "receptionist"];
+const STAFF_ROLES = ["admin", "lab_technician", "pathologist", "receptionist"];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
     const { isAuthenticated, isLoading, role } = useAuth();

@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { getBookingById } from "@/lib/api";
+import { getBookingById, getInvoiceByBooking } from "@/lib/api";
+import PayNowButton from "@/components/PayNowButton";
 import { ArrowLeft, FlaskConical, Calendar, Clock, MapPin, Download, Share2, CheckCircle2, Circle, Home, Building2, Phone, Loader2 } from "lucide-react";
 import axios from "axios";
 
@@ -42,6 +43,7 @@ export default function BookingDetailPage() {
     const [booking, setBooking] = useState<Booking | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+    const [invoice, setInvoice] = useState<{ _id: string; paymentStatus: string; balanceAmount: number } | null>(null);
 
     useEffect(() => {
         if (!id) return;
@@ -52,6 +54,11 @@ export default function BookingDetailPage() {
                     setError(err.response?.data?.message || "Booking not found");
             })
             .finally(() => setLoading(false));
+
+        // Fetch invoice for this booking (non-critical)
+        getInvoiceByBooking(id)
+            .then((res) => setInvoice(res.data?.invoice ?? null))
+            .catch(() => { /* invoice may not exist yet */ });
     }, [id]);
 
     if (loading) return (
@@ -219,6 +226,22 @@ export default function BookingDetailPage() {
                     </div>
                 </div>
             </div>
+
+            {/* Pay Now — show if invoice exists and is unpaid */}
+            {invoice && invoice.paymentStatus !== "paid" && (
+                <div className="bg-white border border-slate-100 rounded-2xl p-5 mb-4 shadow-sm flex items-center justify-between">
+                    <div>
+                        <p className="text-slate-700 font-semibold text-sm">Outstanding Payment</p>
+                        <p className="text-slate-400 text-xs mt-0.5">Balance due: <span className="text-red-500 font-bold">₹{invoice.balanceAmount}</span></p>
+                    </div>
+                    <PayNowButton
+                        invoiceId={invoice._id}
+                        amount={invoice.balanceAmount}
+                        patientName={booking.patientName}
+                        patientPhone={booking.patientPhone}
+                    />
+                </div>
+            )}
 
             {/* Help */}
             <div className="bg-teal-50 border border-teal-200 rounded-2xl p-4 text-center">

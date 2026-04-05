@@ -11,7 +11,9 @@
     "dev": "turbo run dev",
     "build": "turbo run build",
     "lint": "turbo run lint",
-    "test": "turbo run test"
+    "test": "turbo run test",
+    "reset-db": "node scripts/reset-db.js",
+    "seed-db": "node scripts/seed-db.js"
   },
   "devDependencies": {
     "turbo": "latest",

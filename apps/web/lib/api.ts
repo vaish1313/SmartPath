@@ -75,6 +75,7 @@ export const updateBookingStatus = (id: string, status: string) => bookingApi.pu
 export const assignTechnician = (id: string, technicianId: string) => bookingApi.put(`/api/bookings/${id}/assign`, { technicianId });
 export const cancelBooking = (id: string) => bookingApi.delete(`/api/bookings/${id}`);
 export const getAvailableSlots = (date: string) => bookingApi.get("/api/bookings/slots", { params: { date } });
+export const getDashboardStats = () => bookingApi.get("/api/bookings/stats");
 
 // ── Samples ──
 export const createSample = (data: { bookingId: string; patientId: string; patientName: string }) => bookingApi.post("/api/samples", data);
@@ -102,3 +103,19 @@ export const getPatientInvoices = (patientId: string) => bookingApi.get(`/api/in
 export const updateInvoice = (id: string, data: Record<string, unknown>) => bookingApi.put(`/api/invoices/${id}`, data);
 export const recordPayment = (id: string, data: { amount: number; method: string; transactionId?: string }) => bookingApi.post(`/api/invoices/${id}/payment`, data);
 export const generateInvoicePdf = (id: string) => bookingApi.post(`/api/invoices/${id}/generate-pdf`);
+
+// ── Payments (Razorpay) ──
+export const createPaymentOrder = (invoiceId: string) =>
+  bookingApi.post("/api/payments/create-order", { invoiceId });
+
+export const verifyPayment = (data: {
+  razorpay_order_id: string;
+  razorpay_payment_id: string;
+  razorpay_signature: string;
+  invoiceId: string;
+}) => bookingApi.post("/api/payments/verify", data);
+
+// ── Reviews ──
+export const getReviews = (limit = 20) => patientApi.get("/api/reviews", { params: { limit } });
+export const createReview = (data: { bookingId: string; rating: number; review: string }) => patientApi.post("/api/reviews", data);
+export const getReviewByBooking = (bookingId: string) => patientApi.get(`/api/reviews/booking/${bookingId}`);

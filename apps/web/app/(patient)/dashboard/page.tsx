@@ -12,8 +12,8 @@ interface Booking {
     bookingId: string;
     tests: { testName: string; price: number }[];
     status: string;
-    appointmentDate: string;
-    appointmentSlot: string;
+    scheduledDate: string;
+    scheduledTime: string;
     finalAmount: number;
 }
 
@@ -62,16 +62,20 @@ export default function DashboardPage() {
     return (
         <main className="flex-1 p-6 max-w-5xl mx-auto w-full">
             <div className="mb-8">
+                <p className="text-slate-400 text-sm font-medium mb-1">
+                    {new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+                </p>
                 <h1 className="text-2xl font-bold text-slate-800">
-                    Good morning{user?.fullName ? `, ${user.fullName.split(" ")[0]}` : ""} 👋
+                    {new Date().getHours() < 12 ? "Good morning" : new Date().getHours() < 17 ? "Good afternoon" : "Good evening"}
+                    {user?.fullName ? `, ${user.fullName.split(" ")[0]}` : ""} 👋
                 </h1>
-                <p className="text-slate-500 text-sm mt-1">Here's your health summary</p>
+                <p className="text-slate-500 text-sm mt-1">Here&apos;s your health summary</p>
             </div>
 
             {/* Stats */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                 {stats.map(({ label, value, icon: Icon, color }) => (
-                    <div key={label} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+                    <div key={label} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 hover:shadow-md transition-shadow">
                         <div className="flex items-center justify-between mb-3">
                             <span className="text-slate-500 text-xs font-semibold uppercase tracking-wide">{label}</span>
                             <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${colorMap[color]}`}>
@@ -119,7 +123,7 @@ export default function DashboardPage() {
                                             {b.tests.map((t) => t.testName).join(", ").slice(0, 40)}{b.tests.length > 1 ? "…" : ""}
                                         </p>
                                         <p className="text-slate-400 text-xs">
-                                            {new Date(b.appointmentDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })} · {b.appointmentSlot}
+                                            {new Date(b.scheduledDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })} · {b.scheduledTime}
                                         </p>
                                     </div>
                                 </div>

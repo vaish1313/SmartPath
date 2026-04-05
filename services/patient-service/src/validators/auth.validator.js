@@ -11,7 +11,7 @@ const registerSchema = z.object({
     .regex(/\d/, 'Password must contain at least one number'),
   gender: z.enum(['male', 'female', 'other']).optional(),
   dateOfBirth: z.string().optional(),
-  role: z.enum(['patient', 'technician', 'pathologist', 'admin']).optional(),
+  role: z.enum(['patient', 'lab_technician', 'pathologist', 'admin', 'receptionist']).optional(),
 });
 
 const loginSchema = z.object({

@@ -169,9 +169,53 @@ const logout = async (req, res) => {
   });
 };
 
+const googleOAuth = async (req, res) => {
+  const { email, fullName } = req.body;
+  if (!email) return res.status(400).json({ success: false, message: 'Email is required' });
+
+  let patient = await Patient.findOne({ email });
+
+  if (!patient) {
+    // Auto-register — no password needed for OAuth users
+    const crypto = require('crypto');
+    patient = await Patient.create({
+      fullName: fullName || email.split('@')[0],
+      email,
+      phone: `GOOGLE-${crypto.randomBytes(5).toString('hex')}`, // placeholder unique phone
+      password: crypto.randomBytes(16).toString('hex'), // random unhashable password
+      role: 'patient',
+      isVerified: true,
+    });
+  }
+
+  patient.lastLogin = new Date();
+  await patient.save();
+
+  const patientData = {
+    id: patient._id,
+    fullName: patient.fullName,
+    email: patient.email,
+    role: patient.role,
+    phone: patient.phone,
+  };
+
+  await redis.setex(`patient:${patient._id}`, 3600, JSON.stringify(patientData));
+
+  const token = generateToken({
+    id: patient._id,
+    userId: patient._id,
+    email: patient.email,
+    role: patient.role,
+    labId: 'prathamesh-nashik',
+  });
+
+  res.status(200).json({ success: true, token, patient: patientData });
+};
+
 module.exports = {
   register,
   login,
   getMe,
   logout,
+  googleOAuth,
 };

@@ -22,8 +22,8 @@ router.put('/profile', validate(updateProfileSchema), updateProfile);
 
 // Staff routes
 router.post('/', authorizeRoles('admin', 'receptionist'), createPatient);
-router.get('/', authorizeRoles('admin', 'receptionist', 'technician', 'pathologist'), getAllPatients);
-router.get('/:id', authorizeRoles('admin', 'receptionist', 'technician', 'pathologist'), getPatientById);
+router.get('/', authorizeRoles('admin', 'receptionist', 'lab_technician', 'pathologist'), getAllPatients);
+router.get('/:id', authorizeRoles('admin', 'receptionist', 'lab_technician', 'pathologist'), getPatientById);
 router.put('/:id', authorizeRoles('admin', 'receptionist'), updatePatient);
 router.delete('/:id', authorizeRoles('admin'), deactivatePatient);
 

@@ -5,7 +5,7 @@ const bookingSchema = new mongoose.Schema(
     bookingId: { type: String, unique: true },
     patientId: { type: String, required: [true, 'Patient ID is required'] },
     patientName: { type: String, required: [true, 'Patient name is required'], trim: true },
-    patientPhone: { type: String, required: [true, 'Patient phone is required'], trim: true },
+    patientPhone: { type: String, trim: true },
     tests: [
       {
         testId: { type: mongoose.Schema.Types.ObjectId },
@@ -52,6 +52,7 @@ const bookingSchema = new mongoose.Schema(
       enum: ['cash', 'online', 'insurance'],
     },
     assignedTechnician: { type: String }, // staff user id
+    assignedPathologist: { type: String }, // pathologist user id
     notes: { type: String, trim: true },
   },
   { timestamps: true }
