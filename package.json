@@ -16,10 +16,11 @@
     "seed-db": "node scripts/seed-db.js"
   },
   "devDependencies": {
-    "turbo": "latest",
-    "prettier": "^3.0.0"
+    "prettier": "^3.0.0",
+    "turbo": "latest"
   },
   "engines": {
     "node": ">=18.0.0"
-  }
+  },
+  "packageManager": "npm@11.6.2"
 }

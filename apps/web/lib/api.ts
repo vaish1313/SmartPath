@@ -49,6 +49,9 @@ export const getPatientById = (id: string) => patientApi.get(`/api/patients/${id
 export const createPatient = (data: { fullName: string; email: string; phone: string; password?: string; gender?: string; dateOfBirth?: string; bloodGroup?: string; address?: { street?: string; city?: string; state?: string; pincode?: string } }) => patientApi.post("/api/patients", data);
 export const updatePatient = (id: string, data: { fullName?: string; phone?: string; dateOfBirth?: string; gender?: string; bloodGroup?: string; address?: { street?: string; city?: string; state?: string; pincode?: string }; medicalHistory?: { condition: string; diagnosedDate?: string; notes?: string }[] }) => patientApi.put(`/api/patients/${id}`, data);
 export const deletePatient = (id: string) => patientApi.delete(`/api/patients/${id}`);
+export const checkPatientEmail = (email: string) => patientApi.get("/api/patients/check-email", { params: { email } });
+export const registerGooglePatient = (data: { fullName: string; email: string; phone: string; dateOfBirth?: string; gender?: string; bloodGroup?: string; address?: { street?: string; city?: string; state?: string; pincode?: string } }) => patientApi.post("/api/patients/register-google", data);
+export const getStaffByRole = (role: string) => patientApi.get("/api/users", { params: { role } });
 
 // ── Tests (patient-service) ──
 export const getAllTests = (params?: { page?: number; limit?: number; search?: string; category?: string }) => patientApi.get("/api/tests", { params });

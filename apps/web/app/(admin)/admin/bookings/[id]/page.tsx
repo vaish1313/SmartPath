@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { getBookingById, updateBookingStatus, assignTechnician, getAllPatients } from "@/lib/api";
+import { getBookingById, updateBookingStatus, assignTechnician, getStaffByRole } from "@/lib/api";
 import { ArrowLeft, Loader2, Calendar, Clock, MapPin, Home, Building2, User, CheckCircle2, Circle } from "lucide-react";
 import axios from "axios";
 
@@ -79,11 +79,13 @@ export default function BookingDetailPage() {
             })
             .finally(() => setLoading(false));
 
-        getAllPatients({ limit: 100 })
-            .then((res) => {
-                const all: { _id: string; fullName: string; role: string }[] = res.data?.patients || [];
-                setTechnicians(all.filter((p) => ["lab_technician", "pathologist"].includes(p.role)));
-            })
+        Promise.all([
+            getStaffByRole("lab_technician"),
+            getStaffByRole("pathologist"),
+        ]).then(([techRes, pathRes]) => {
+            const all = [...(techRes.data?.users || []), ...(pathRes.data?.users || [])];
+            setTechnicians(all);
+        })
             .catch(() => { /* non-critical */ });
     }, [id]);
 

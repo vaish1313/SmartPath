@@ -15,8 +15,8 @@ interface Booking {
   _id: string;
   bookingId: string;
   tests: { testName: string; price: number }[];
-  appointmentDate: string;
-  appointmentSlot: string;
+  scheduledDate: string;
+  scheduledTime: string;
   bookingType: string;
   status: string;
   finalAmount: number;
@@ -204,10 +204,10 @@ export default function BookingsPage() {
                     <div className="flex items-center gap-4">
                       <span className="flex items-center gap-1.5 text-slate-400 text-xs">
                         <Calendar className="w-3 h-3" />
-                        {new Date(b.appointmentDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                        {new Date(b.scheduledDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
                       </span>
                       <span className="flex items-center gap-1.5 text-slate-400 text-xs">
-                        <Clock className="w-3 h-3" /> {b.appointmentSlot}
+                        <Clock className="w-3 h-3" /> {b.scheduledTime}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">

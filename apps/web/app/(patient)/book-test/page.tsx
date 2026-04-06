@@ -1,21 +1,31 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { getAllTests, getAvailableSlots, createBooking } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
-import { Search, Check, FlaskConical, Clock, Calendar, Home, Building2, ArrowLeft, ArrowRight, Loader2, X, MapPin } from "lucide-react";
+import { Search, Check, FlaskConical, Clock, Calendar, Home, Building2, ArrowLeft, ArrowRight, Loader2, X, MapPin, Upload } from "lucide-react";
 import axios from "axios";
 
-interface Test { _id: string; name: string; category: string; price: number; turnaroundTime: string; }
+interface Test { _id: string; testName: string; testCode: string; category: string; price: number; turnaroundTime: number; sampleType: string; }
 interface Slot { slot: string; available: boolean; }
 
 const STEPS = ["Select Tests", "Schedule", "Confirm"];
 
 export default function BookTestPage() {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const user = useAuthStore((s) => s.user);
     const [step, setStep] = useState(0);
+
+    // Prescription upload state
+    const prescriptionRef = useRef<HTMLDivElement>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [rxFile, setRxFile] = useState<File | null>(null);
+    const [rxPreview, setRxPreview] = useState<string | null>(null);
+    const [rxScanning, setRxScanning] = useState(false);
+    const [rxMatched, setRxMatched] = useState<string | null>(null);
+    const [rxUnmatched, setRxUnmatched] = useState<string[]>([]);
 
     const [tests, setTests] = useState<Test[]>([]);
     const [testsLoading, setTestsLoading] = useState(true);
@@ -42,6 +52,13 @@ export default function BookTestPage() {
             .finally(() => setTestsLoading(false));
     }, []);
 
+    // Auto-scroll to prescription section if ?prescription=true
+    useEffect(() => {
+        if (searchParams?.get("prescription") === "true" && prescriptionRef.current) {
+            setTimeout(() => prescriptionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 400);
+        }
+    }, [searchParams]);
+
     useEffect(() => {
         if (!selectedDate) return;
         setSlotsLoading(true);
@@ -53,10 +70,77 @@ export default function BookTestPage() {
 
     const categories = ["All", ...Array.from(new Set(tests.map((t) => t.category)))];
     const filteredTests = tests.filter((t) => {
-        const matchSearch = t.name.toLowerCase().includes(search.toLowerCase());
+        const matchSearch = t.testName.toLowerCase().includes(search.toLowerCase());
         const matchCat = category === "All" || t.category === category;
         return matchSearch && matchCat;
     });
+
+    const handleRxFile = (file: File) => {
+        setRxFile(file);
+        setRxMatched(null);
+        setRxUnmatched([]);
+        const reader = new FileReader();
+        reader.onload = (e) => setRxPreview(e.target?.result as string);
+        reader.readAsDataURL(file);
+    };
+
+    const scanPrescription = async () => {
+        if (!rxFile || tests.length === 0) return;
+        setRxScanning(true);
+        setRxMatched(null);
+        setRxUnmatched([]);
+        try {
+            const base64 = await new Promise<string>((resolve) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const result = e.target?.result as string;
+                    resolve(result.split(",")[1]);
+                };
+                reader.readAsDataURL(rxFile);
+            });
+            const mediaType = rxFile.type as "image/jpeg" | "image/png" | "image/gif" | "image/webp";
+            const res = await fetch("https://api.anthropic.com/v1/messages", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "x-api-key": process.env.NEXT_PUBLIC_ANTHROPIC_API_KEY || "",
+                    "anthropic-version": "2023-06-01",
+                },
+                body: JSON.stringify({
+                    model: "claude-sonnet-4-20250514",
+                    max_tokens: 1000,
+                    messages: [{
+                        role: "user",
+                        content: [
+                            { type: "image", source: { type: "base64", media_type: mediaType, data: base64 } },
+                            { type: "text", text: 'Extract all pathology/lab test names from this prescription. Return ONLY a JSON array of test names, nothing else. Example: ["Complete Blood Count", "Lipid Profile"]' },
+                        ],
+                    }],
+                }),
+            });
+            const data = await res.json();
+            const text = data?.content?.[0]?.text || "[]";
+            const extracted: string[] = JSON.parse(text.match(/\[.*\]/s)?.[0] || "[]");
+            const matched: Test[] = [];
+            const unmatched: string[] = [];
+            extracted.forEach((name) => {
+                const found = tests.find((t) => t.testName.toLowerCase().includes(name.toLowerCase()) || name.toLowerCase().includes(t.testName.toLowerCase()));
+                if (found) matched.push(found);
+                else unmatched.push(name);
+            });
+            setSelected((prev) => {
+                const existing = prev.map((t) => t._id);
+                return [...prev, ...matched.filter((t) => !existing.includes(t._id))];
+            });
+            setRxMatched(`Found ${matched.length} test${matched.length !== 1 ? "s" : ""} from prescription`);
+            setRxUnmatched(unmatched);
+        } catch {
+            setRxMatched(null);
+            setRxUnmatched(["Could not read prescription. Please select tests manually."]);
+        } finally {
+            setRxScanning(false);
+        }
+    };
 
     const toggleTest = (t: Test) =>
         setSelected((prev) => prev.some((s) => s._id === t._id) ? prev.filter((s) => s._id !== t._id) : [...prev, t]);
@@ -81,12 +165,17 @@ export default function BookTestPage() {
             const res = await createBooking({
                 patientId: user.id,
                 patientName: user.fullName,
-                patientPhone: user.phone || "0000000000", // fallback — profile page has real phone
-                tests: selected.map((t) => t._id),
-                bookingType: collectionType,
-                appointmentDate: selectedDate,
-                appointmentSlot: selectedSlot,
-                address: collectionType === "home-collection" ? address : undefined,
+                patientPhone: user.phone || "0000000000",
+                tests: selected.map((t) => ({
+                    testId: t._id,
+                    testName: t.testName,
+                    testCode: t.testCode,
+                    price: t.price,
+                })),
+                collectionType,
+                scheduledDate: selectedDate,
+                scheduledTime: selectedSlot,
+                collectionAddress: collectionType === "home-collection" ? address : undefined,
                 paymentMethod: "cash",
             });
             setBookingId(res.data.booking?.bookingId || "");
@@ -175,7 +264,7 @@ export default function BookTestPage() {
                     <div className="flex gap-1 flex-wrap">
                         {selected.slice(0, 2).map((t) => (
                             <button key={t._id} onClick={() => toggleTest(t)} className="flex items-center gap-1 bg-white border border-slate-200 rounded-full px-2 py-0.5 text-[10px] text-slate-500 hover:text-red-500 transition-colors">
-                                {t.name.split(" ")[0]} <X className="w-2.5 h-2.5" />
+                                {t.testName.split(" ")[0]} <X className="w-2.5 h-2.5" />
                             </button>
                         ))}
                         {selected.length > 2 && <span className="text-slate-400 text-xs self-center">+{selected.length - 2}</span>}
@@ -192,6 +281,66 @@ export default function BookTestPage() {
                     <div>
                         <h2 className="text-lg font-bold text-slate-800 mb-1">Select your tests</h2>
                         <p className="text-slate-500 text-sm mb-4">Choose one or more tests.</p>
+
+                        {/* Prescription upload */}
+                        <div
+                            ref={prescriptionRef}
+                            className={`mb-5 rounded-xl border-2 border-dashed transition-all ${searchParams?.get("prescription") === "true" ? "border-teal-400 bg-teal-50/50" : "border-slate-200 bg-slate-50"}`}
+                        >
+                            {!rxFile ? (
+                                <button
+                                    type="button"
+                                    onClick={() => fileInputRef.current?.click()}
+                                    className="w-full flex flex-col items-center gap-2 py-5 px-4"
+                                >
+                                    <div className="w-10 h-10 rounded-xl bg-teal-100 flex items-center justify-center">
+                                        <Upload className="w-5 h-5 text-teal-600" strokeWidth={1.8} />
+                                    </div>
+                                    <p className="text-slate-700 text-sm font-semibold">Upload Prescription — AI will auto-select your tests</p>
+                                    <p className="text-slate-400 text-xs">JPG, PNG or PDF</p>
+                                </button>
+                            ) : (
+                                <div className="p-4">
+                                    <div className="flex items-center gap-3 mb-3">
+                                        {rxPreview && rxFile.type.startsWith("image/") && (
+                                            <img src={rxPreview} alt="Prescription" className="w-14 h-14 rounded-lg object-cover border border-slate-200" />
+                                        )}
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-slate-700 text-sm font-semibold truncate">{rxFile.name}</p>
+                                            <p className="text-slate-400 text-xs">{(rxFile.size / 1024).toFixed(0)} KB</p>
+                                        </div>
+                                        <button onClick={() => { setRxFile(null); setRxPreview(null); setRxMatched(null); setRxUnmatched([]); }} className="text-slate-400 hover:text-red-500 transition-colors flex-shrink-0">
+                                            <X className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                    {!rxMatched && !rxScanning && (
+                                        <button onClick={scanPrescription}
+                                            className="w-full flex items-center justify-center gap-2 bg-teal-600 hover:bg-teal-700 text-white font-semibold text-sm py-2 rounded-lg transition-all">
+                                            <Upload className="w-3.5 h-3.5" /> Scan Prescription
+                                        </button>
+                                    )}
+                                    {rxScanning && (
+                                        <div className="flex items-center justify-center gap-2 py-2 text-teal-600 text-sm font-medium">
+                                            <Loader2 className="w-4 h-4 animate-spin" /> Scanning prescription...
+                                        </div>
+                                    )}
+                                    {rxMatched && (
+                                        <p className="text-teal-600 text-xs font-semibold mt-1">{rxMatched}</p>
+                                    )}
+                                    {rxUnmatched.length > 0 && (
+                                        <p className="text-amber-600 text-xs mt-1">Could not match: {rxUnmatched.join(", ")}</p>
+                                    )}
+                                </div>
+                            )}
+                            <input
+                                ref={fileInputRef}
+                                type="file"
+                                accept="image/jpeg,image/png,application/pdf"
+                                className="hidden"
+                                onChange={(e) => { const f = e.target.files?.[0]; if (f) handleRxFile(f); e.target.value = ""; }}
+                            />
+                        </div>
+
                         <div className="relative mb-3">
                             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                             <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search tests..."
@@ -219,10 +368,10 @@ export default function BookTestPage() {
                                                     {isSel && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
                                                 </div>
                                                 <div>
-                                                    <p className="text-slate-700 text-sm font-semibold">{t.name}</p>
+                                                    <p className="text-slate-700 text-sm font-semibold">{t.testName}</p>
                                                     <div className="flex items-center gap-3 mt-0.5">
                                                         <span className="text-slate-400 text-xs">{t.category}</span>
-                                                        <span className="text-slate-400 text-xs flex items-center gap-1"><Clock className="w-3 h-3" /> {t.turnaroundTime}</span>
+                                                        <span className="text-slate-400 text-xs flex items-center gap-1"><Clock className="w-3 h-3" /> {t.turnaroundTime}h</span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -320,7 +469,7 @@ export default function BookTestPage() {
                                 <div key={t._id} className="flex justify-between items-center">
                                     <div className="flex items-center gap-2">
                                         <FlaskConical className="w-3.5 h-3.5 text-teal-500" strokeWidth={1.8} />
-                                        <span className="text-slate-700 text-sm">{t.name}</span>
+                                        <span className="text-slate-700 text-sm">{t.testName}</span>
                                     </div>
                                     <span className="text-teal-600 text-sm font-semibold">₹{t.price}</span>
                                 </div>

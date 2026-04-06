@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Eye, EyeOff, FlaskConical, ArrowRight, Loader2 } from "lucide-react";
+import { Eye, EyeOff, FlaskConical, ArrowRight, Loader2, ArrowLeft } from "lucide-react";
 import { loginUser } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
 import axios from "axios";
@@ -114,6 +114,10 @@ export default function LoginPage() {
             {/* ── Right form panel ── */}
             <div className="flex-1 flex items-center justify-center p-6 relative bg-slate-50">
                 <div className="hidden lg:block absolute left-0 top-8 bottom-8 w-px bg-gradient-to-b from-transparent via-slate-200 to-transparent" />
+                {/* Back to home */}
+                <Link href="/" className="absolute top-5 right-5 flex items-center gap-1.5 text-slate-400 hover:text-slate-600 text-xs font-medium transition-colors">
+                    <ArrowLeft className="w-3.5 h-3.5" /> Home
+                </Link>
                 <div className="w-full max-w-[400px]">
 
                     {/* Mobile logo */}

@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { CalendarCheck, ScanLine, FileText, Bell, ShieldCheck, Clock } from "lucide-react";
+import { CalendarCheck, ScanLine, FileText, Bell, ShieldCheck, Clock, Upload, X } from "lucide-react";
+import Link from "next/link";
 
 function Badge({ children }: { children: React.ReactNode }) {
     return (
@@ -28,8 +29,36 @@ const accentMap: Record<string, { icon: string; bg: string; bigBg: string }> = {
     amber: { icon: "text-amber-600", bg: "bg-amber-50", bigBg: "bg-amber-50" },
 };
 
+function PrescriptionModal({ onClose }: { onClose: () => void }) {
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 relative">
+                <button onClick={onClose} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors">
+                    <X className="w-5 h-5" />
+                </button>
+                <div className="w-12 h-12 rounded-2xl bg-teal-50 flex items-center justify-center mb-4">
+                    <Upload className="w-6 h-6 text-teal-600" strokeWidth={1.8} />
+                </div>
+                <h2 className="text-lg font-bold text-slate-800 mb-2">Upload Your Prescription</h2>
+                <p className="text-slate-500 text-sm mb-6">To use this feature, you need a SmartPath account.</p>
+                <div className="flex gap-3">
+                    <Link href="/register"
+                        className="flex-1 flex items-center justify-center bg-teal-600 hover:bg-teal-700 text-white font-bold text-sm rounded-xl py-2.5 transition-all shadow-md shadow-teal-200">
+                        Create Account
+                    </Link>
+                    <Link href="/login"
+                        className="flex-1 flex items-center justify-center bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold text-sm rounded-xl py-2.5 transition-all">
+                        Sign In
+                    </Link>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 export default function Features() {
     const [visible, setVisible] = useState(false);
+    const [showModal, setShowModal] = useState(false);
     const ref = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -40,6 +69,7 @@ export default function Features() {
 
     return (
         <section className="py-24 px-6 lg:px-16 bg-white">
+            {showModal && <PrescriptionModal onClose={() => setShowModal(false)} />}
             <div className="max-w-6xl mx-auto">
                 <div className="text-center mb-16">
                     <Badge>Why SmartPath</Badge>
@@ -57,6 +87,44 @@ export default function Features() {
                 </div>
 
                 <div ref={ref} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {/* Prescription upload — highlighted card */}
+                    <button
+                        onClick={() => setShowModal(true)}
+                        className="group rounded-2xl overflow-hidden border-2 border-teal-400 shadow-md flex flex-col bg-gradient-to-br from-teal-600 to-cyan-600 text-left cursor-pointer"
+                        style={{
+                            transition: "transform 0.3s ease, box-shadow 0.3s ease, opacity 0.5s ease, translate 0.5s ease",
+                            opacity: visible ? 1 : 0,
+                            translate: visible ? "0 0" : "0 28px",
+                            transitionDelay: "0ms",
+                        }}
+                        onMouseEnter={(e) => {
+                            (e.currentTarget as HTMLButtonElement).style.transform = "translateY(-4px)";
+                            (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 16px 40px rgba(20,184,166,0.35)";
+                        }}
+                        onMouseLeave={(e) => {
+                            (e.currentTarget as HTMLButtonElement).style.transform = "translateY(0)";
+                            (e.currentTarget as HTMLButtonElement).style.boxShadow = "";
+                        }}
+                    >
+                        <div className="relative h-44 w-full flex items-center justify-center bg-white/10">
+                            <div className="w-20 h-20 rounded-3xl flex items-center justify-center bg-white/20 group-hover:scale-110 transition-transform duration-300">
+                                <Upload className="w-10 h-10 text-white" strokeWidth={1.5} />
+                            </div>
+                            <div className="absolute top-3 right-3 bg-white/20 text-white text-[10px] font-bold px-2.5 py-1 rounded-full tracking-wider uppercase">
+                                AI Powered
+                            </div>
+                        </div>
+                        <div className="p-5 flex flex-col gap-2 flex-1">
+                            <div className="flex items-center gap-2.5">
+                                <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 bg-white/20">
+                                    <Upload className="w-3.5 h-3.5 text-white" strokeWidth={1.8} />
+                                </div>
+                                <h3 className="text-white font-semibold text-sm">Upload Prescription & Book Instantly</h3>
+                            </div>
+                            <p className="text-teal-100 text-sm leading-relaxed">AI reads your prescription and auto-selects tests</p>
+                        </div>
+                    </button>
+
                     {features.map(({ icon: Icon, title, desc, accent }, i) => {
                         const a = accentMap[accent];
                         return (
@@ -67,7 +135,7 @@ export default function Features() {
                                     transition: "transform 0.3s ease, box-shadow 0.3s ease, opacity 0.5s ease, translate 0.5s ease",
                                     opacity: visible ? 1 : 0,
                                     translate: visible ? "0 0" : "0 28px",
-                                    transitionDelay: `${i * 150}ms`,
+                                    transitionDelay: `${(i + 1) * 150}ms`,
                                 }}
                                 onMouseEnter={(e) => {
                                     (e.currentTarget as HTMLDivElement).style.transform = "translateY(-4px)";
@@ -78,15 +146,12 @@ export default function Features() {
                                     (e.currentTarget as HTMLDivElement).style.boxShadow = "";
                                 }}
                             >
-                                {/* Icon area — replaces image */}
                                 <div className={`relative h-44 w-full flex items-center justify-center ${a.bigBg}`}>
                                     <div className={`w-20 h-20 rounded-3xl flex items-center justify-center ${a.bg} shadow-sm group-hover:scale-110 transition-transform duration-300`}>
                                         <Icon className={`w-10 h-10 ${a.icon}`} strokeWidth={1.5} />
                                     </div>
                                     <div className="absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-white/60 to-transparent" />
                                 </div>
-
-                                {/* Text */}
                                 <div className="p-5 flex flex-col gap-2 flex-1">
                                     <div className="flex items-center gap-2.5">
                                         <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${a.bg}`}>

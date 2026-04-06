@@ -7,13 +7,19 @@ const {
   getPatientById,
   updatePatient,
   deactivatePatient,
+  checkEmail,
+  registerGoogle,
 } = require('../controllers/patient.controller');
 const { authMiddleware, authorizeRoles } = require('../middleware/auth.middleware');
 const { validate, updateProfileSchema } = require('../validators/auth.validator');
 
 const router = express.Router();
 
-// All routes require authentication
+// Public — Google OAuth onboarding (no token yet)
+router.get('/check-email', checkEmail);
+router.post('/register-google', registerGoogle);
+
+// All routes below require authentication
 router.use(authMiddleware);
 
 // Own profile (any authenticated user)

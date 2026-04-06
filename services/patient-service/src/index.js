@@ -5,7 +5,6 @@ const helmet = require('helmet');
 const cors = require('cors');
 const morgan = require('morgan');
 const connectDB = require('./config/db');
-const redis = require('./config/redis');
 const authRoutes = require('./routes/auth.routes');
 const patientRoutes = require('./routes/patient.routes');
 const testRoutes = require('./routes/test.routes');

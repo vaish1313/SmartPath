@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { useSession } from "next-auth/react";
 import { useAuthStore } from "@/store/authStore";
 import { getMe } from "@/lib/api";
 
 export function useAuth() {
   const { user, isAuthenticated, isLoading, logout, loadFromStorage, setUser, setLoading, token } =
     useAuthStore();
+  const { status: nextAuthStatus } = useSession();
   const verified = useRef(false);
 
   useEffect(() => {
@@ -17,7 +19,8 @@ export function useAuth() {
 
     const storedToken = localStorage.getItem("smartpath_token");
     if (!storedToken) {
-      setLoading(false);
+      // No smartpath token — keep isLoading true until NextAuth resolves
+      // so the layout doesn't flash-redirect before the session is known
       return;
     }
 
@@ -33,6 +36,14 @@ export function useAuth() {
       });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Once NextAuth has resolved (authenticated or not), we can safely mark loading done
+  useEffect(() => {
+    if (nextAuthStatus !== "loading") {
+      setLoading(false);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nextAuthStatus]);
 
   const role = user?.role ?? null;
 

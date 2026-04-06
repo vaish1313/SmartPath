@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { useAuthStore } from "@/store/authStore";
 import { getMyBookings } from "@/lib/api";
 import Link from "next/link";
-import { CalendarCheck, FileText, Clock, Activity, ArrowRight, FlaskConical } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { CalendarCheck, FileText, Clock, Activity, ArrowRight, FlaskConical, MapPin, Upload } from "lucide-react";
 import axios from "axios";
 
 interface Booking {
@@ -28,6 +29,7 @@ const statusStyle: Record<string, string> = {
 
 export default function DashboardPage() {
     const user = useAuthStore((s) => s.user);
+    const router = useRouter();
     const [bookings, setBookings] = useState<Booking[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -84,6 +86,32 @@ export default function DashboardPage() {
                         </div>
                         <p className="text-2xl font-bold text-slate-800">{loading ? "—" : value}</p>
                     </div>
+                ))}
+            </div>
+
+            {/* Quick Actions */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+                <button
+                    onClick={() => router.push("/book-test?prescription=true")}
+                    className="bg-teal-600 hover:bg-teal-700 rounded-2xl border border-teal-600 shadow-sm p-5 flex flex-col items-center gap-3 hover:shadow-md transition-all"
+                >
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-white/20">
+                        <Upload className="w-5 h-5 text-white" strokeWidth={1.8} />
+                    </div>
+                    <span className="text-white text-sm font-semibold">Upload Prescription</span>
+                </button>
+                {[
+                    { label: "Book a Test", href: "/book-test", icon: FlaskConical, color: "bg-teal-50 text-teal-600", border: "hover:border-teal-200" },
+                    { label: "My Bookings", href: "/bookings", icon: CalendarCheck, color: "bg-blue-50 text-blue-600", border: "hover:border-blue-200" },
+                    { label: "My Reports", href: "/reports", icon: FileText, color: "bg-violet-50 text-violet-600", border: "hover:border-violet-200" },
+                ].map(({ label, href, icon: Icon, color, border }) => (
+                    <Link key={label} href={href}
+                        className={`bg-white rounded-2xl border border-slate-100 shadow-sm p-5 flex flex-col items-center gap-3 hover:shadow-md transition-all ${border}`}>
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${color}`}>
+                            <Icon className="w-5 h-5" strokeWidth={1.8} />
+                        </div>
+                        <span className="text-slate-700 text-sm font-semibold">{label}</span>
+                    </Link>
                 ))}
             </div>
 

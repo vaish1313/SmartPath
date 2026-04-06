@@ -1,7 +1,7 @@
 # SmartPath — Pathology Lab Management System
 
 > A production-grade, full-stack lab management platform built for **Prathamesh Advanced Diagnostic Center**, Nashik.  
-> Handles patient registration, test bookings, sample tracking, result entry, report generation, and billing — end to end.
+> Handles patient registration, test bookings, sample tracking, result entry, report generation, billing, and patient reviews — end to end.
 
 ---
 
@@ -11,9 +11,10 @@
 |---|---|
 | Monorepo | Turborepo + npm workspaces |
 | Frontend | Next.js 14 (App Router), Tailwind CSS, Zustand, Axios, React Hook Form, Zod |
-| Patient Service | Node.js, Express, MongoDB (Mongoose), JWT, bcrypt, Redis (ioredis) |
-| Booking Service | Node.js, Express, MongoDB (Mongoose), JWT, PDFKit, date-fns |
-| Auth | JWT (RS256), RBAC with role-based middleware |
+| Auth | JWT (custom) + NextAuth.js (Google OAuth), RBAC middleware |
+| Patient Service | Node.js, Express, MongoDB (Mongoose), bcrypt, Redis |
+| Booking Service | Node.js, Express, MongoDB (Mongoose), PDFKit, date-fns |
+| Payments | Razorpay (orders + webhook verification) |
 | Database | MongoDB via `MONGO_URL` |
 | Cache | Redis (graceful fallback if offline) |
 
@@ -24,57 +25,73 @@
 ```
 smartpath/
 ├── apps/
-│   └── web/                        # Next.js frontend (port 3000)
+│   └── web/                          # Next.js frontend (port 3000)
 │       ├── app/
-│       │   ├── (public)/           # Landing, tests catalog, about, contact
-│       │   ├── (auth)/             # Login, register
-│       │   ├── (patient)/          # Patient portal (dashboard, bookings, reports, profile)
-│       │   └── (admin)/            # Admin panel (patients, bookings, tests, lab, billing)
+│       │   ├── (public)/             # Landing, tests catalog, about, contact
+│       │   ├── (auth)/               # Login, register
+│       │   ├── (patient)/            # Patient portal — dashboard, bookings, reports, profile
+│       │   ├── (admin)/              # Staff panel — patients, bookings, tests, lab, billing
+│       │   ├── auth/google/callback/ # Google OAuth callback handler
+│       │   └── api/auth/[...nextauth]/ # NextAuth.js route
 │       ├── components/
+│       │   ├── admin/                # StatsRow, RevenueChart, BookingsTable, PatientsList
+│       │   ├── booking/              # Multi-step booking wizard components
+│       │   ├── landing/              # Hero, Features, Testimonials, etc.
+│       │   ├── layout/               # Navbar, Sidebar, AdminSidebar, Footer, MobileNav
+│       │   ├── patient/              # ReviewModal
+│       │   └── shared/               # ConfirmDialog, LoadingSpinner, EmptyState
 │       ├── hooks/
-│       ├── lib/api.ts              # All Axios API functions
-│       └── store/authStore.ts      # Zustand auth store
+│       │   └── useAuth.ts            # Unified auth hook (smartpath_token + NextAuth)
+│       ├── lib/api.ts                # All Axios API functions
+│       ├── store/authStore.ts        # Zustand auth store
+│       └── middleware.ts             # Edge middleware — RBAC + route protection
 │
 ├── services/
-│   ├── patient-service/            # Port 3001 — Auth, Patients, Tests, Packages
+│   ├── patient-service/              # Port 3001 — Auth, Patients, Tests, Packages, Reviews
 │   │   └── src/
-│   │       ├── models/             # Patient, Test, Package
-│   │       ├── routes/             # auth, patient, test, package
+│   │       ├── models/               # Patient, Test, Package, Review
+│   │       ├── routes/               # auth, patient, test, package, review
 │   │       ├── controllers/
-│   │       ├── middleware/         # authMiddleware, authorizeRoles
+│   │       ├── middleware/           # authMiddleware, authorizeRoles
 │   │       └── validators/
 │   │
-│   └── booking-service/            # Port 3002 — Bookings, Samples, Results, Invoices
+│   └── booking-service/              # Port 3002 — Bookings, Samples, Results, Invoices, Payments
 │       └── src/
-│           ├── models/             # Booking, Sample, Result, Invoice
-│           ├── routes/             # booking, sample, result, invoice
+│           ├── models/               # Booking, Sample, Result, Invoice
+│           ├── routes/               # booking, sample, result, invoice, payment
 │           ├── controllers/
-│           └── uploads/            # Generated PDFs (reports + invoices)
+│           └── uploads/              # Generated PDFs (reports + invoices)
 │
-├── .env                            # Shared environment variables
+├── scripts/
+│   ├── seed-db.js                    # Seed admin, staff, patients, tests, packages
+│   └── reset-db.js                   # Wipe all collections
+│
+├── .env                              # Shared environment variables (both services)
 ├── turbo.json
 └── package.json
 ```
 
 ---
 
-## Roles & Permissions
+## Roles & Access
 
-| Role | Access |
-|---|---|
-| `admin` | Everything |
-| `receptionist` | Patients, Bookings, Invoices |
-| `technician` | Samples, Results (entry) |
-| `pathologist` | Results (approval), Report generation |
-| `patient` | Own portal — bookings, reports, profile |
+| Role | Routes | Capabilities |
+|---|---|---|
+| `admin` | `/admin/*` | Everything — full CRUD, staff management, reports |
+| `receptionist` | `/admin/*` | Patients, bookings, invoices, billing |
+| `lab_technician` | `/admin/*` | Samples, result entry |
+| `pathologist` | `/admin/*` | Result approval, report generation |
+| `patient` | `/dashboard`, `/bookings`, `/reports`, `/profile` | Own portal only |
 
 ---
 
 ## Environment Variables
 
-Create a `.env` file at the root:
+### Root `.env` (shared by both services)
 
 ```env
+NODE_ENV=development
+
 # MongoDB
 MONGO_URL=mongodb://admin:password@localhost:27017/smartpath?authSource=admin
 
@@ -89,9 +106,23 @@ JWT_EXPIRES_IN=7d
 PATIENT_SERVICE_PORT=3001
 BOOKING_SERVICE_PORT=3002
 
+# Razorpay
+RAZORPAY_KEY_ID=rzp_test_xxxxxxxxxxxx
+RAZORPAY_KEY_SECRET=xxxxxxxxxxxxxxxxxxxxxxxx
+RAZORPAY_WEBHOOK_SECRET=your_webhook_secret
+
 # Frontend
 FRONTEND_URL=http://localhost:3000
-NODE_ENV=development
+```
+
+### `apps/web/.env.local` (frontend only)
+
+```env
+NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_SECRET=any_random_string_here
+
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
 ```
 
 ---
@@ -102,9 +133,9 @@ NODE_ENV=development
 
 - Node.js >= 18
 - MongoDB running locally or via Docker
-- Redis (optional — services fail gracefully without it)
+- Redis (optional — services degrade gracefully without it)
 
-### 1. Clone and install
+### 1. Install
 
 ```bash
 git clone https://github.com/your-org/smartpath.git
@@ -112,25 +143,74 @@ cd smartpath
 npm install
 ```
 
-### 2. Start all services
+### 2. Configure environment
+
+Fill in the env files (already present in the repo):
+
+- `.env` — root, shared by both services
+- `apps/web/.env.local` — frontend only (NextAuth + Google OAuth)
+
+### 3. Seed the database
 
 ```bash
-# Start everything (frontend + both services) via Turborepo
+npm run seed-db
+```
+
+This creates:
+- Admin: `admin@prathamesh.com` / `Admin@123`
+- Lab Tech: `tech1@prathamesh.com` / `Tech@123`
+- Lab Tech: `tech2@prathamesh.com` / `Tech@123`
+- Pathologist: `path1@prathamesh.com` / `Path@123`
+- Receptionist: `reception1@prathamesh.com` / `Reception@123`
+- 5 sample patients (`amit@gmail.com`, `priya@gmail.com`, etc.) / `Patient@123`
+- 40 diagnostic tests across 6 categories
+- 6 health packages
+
+To wipe and re-seed:
+
+```bash
+npm run reset-db && npm run seed-db
+```
+
+### 4. Start all services
+
+```bash
 npm run dev
 ```
 
-Or start individually:
+Or individually:
 
 ```bash
-# Frontend — http://localhost:3000
-cd apps/web && npm run dev
-
-# Patient service — http://localhost:3001
-cd services/patient-service && npm run dev
-
-# Booking service — http://localhost:3002
-cd services/booking-service && npm run dev
+cd apps/web && npm run dev           # http://localhost:3000
+cd services/patient-service && npm run dev   # http://localhost:3001
+cd services/booking-service && npm run dev   # http://localhost:3002
 ```
+
+---
+
+## Authentication
+
+SmartPath uses a dual auth system:
+
+### Email / Password
+- `POST /api/auth/login` → returns JWT stored in `localStorage` + cookie
+- Middleware reads `smartpath_token` cookie for RBAC
+- `useAuth()` hook verifies token via `/api/auth/me` on mount
+
+### Google OAuth
+- Powered by NextAuth.js (`next-auth`)
+- On callback, calls `POST /api/auth/google-oauth` on patient-service to register/login
+- Returns a SmartPath JWT stored identically to email/password flow
+- Middleware also checks NextAuth session token as fallback
+
+### Route Protection
+
+| Path | Protection |
+|---|---|
+| `/admin/*` | Staff only (non-patients) — finer role checks in `(admin)/layout.tsx` |
+| `/dashboard`, `/bookings`, `/reports`, `/profile`, `/portal` | Patients only |
+| `/login`, `/register` | Redirects authenticated users to their home |
+| `/`, `/tests`, `/about`, `/contact` | Public |
 
 ---
 
@@ -141,33 +221,41 @@ cd services/booking-service && npm run dev
 #### Auth
 | Method | Endpoint | Auth | Description |
 |---|---|---|---|
-| POST | `/api/auth/register` | Public | Register patient or staff |
+| POST | `/api/auth/register` | Public | Register patient |
 | POST | `/api/auth/login` | Public | Login, returns JWT |
-| GET | `/api/auth/me` | JWT | Get current user |
-| POST | `/api/auth/logout` | JWT | Logout, clears cache |
+| POST | `/api/auth/google-oauth` | Public | Google OAuth register/login |
+| GET | `/api/auth/me` | JWT | Current user |
+| POST | `/api/auth/logout` | JWT | Logout, clears Redis cache |
 
 #### Patients
 | Method | Endpoint | Roles | Description |
 |---|---|---|---|
 | GET | `/api/patients/profile` | Any | Own profile |
 | PUT | `/api/patients/profile` | Any | Update own profile |
-| GET | `/api/patients` | admin, receptionist, technician, pathologist | List all patients |
+| GET | `/api/patients` | Staff | List all patients |
 | POST | `/api/patients` | admin, receptionist | Create patient |
-| GET | `/api/patients/:id` | Staff | Get patient by ID |
-| PUT | `/api/patients/:id` | admin, receptionist | Update patient |
-| DELETE | `/api/patients/:id` | admin | Soft delete |
+| GET | `/api/patients/:id` | Staff | Get by ID |
+| PUT | `/api/patients/:id` | admin, receptionist | Update |
+| DELETE | `/api/patients/:id` | admin | Delete |
 
 #### Tests & Packages
 | Method | Endpoint | Auth | Description |
 |---|---|---|---|
 | GET | `/api/tests/catalog` | Public | All active tests |
 | GET | `/api/tests` | JWT | Paginated + search |
-| POST | `/api/tests` | admin | Create test |
-| PUT | `/api/tests/:id` | admin | Update test |
-| DELETE | `/api/tests/:id` | admin | Soft delete |
+| POST | `/api/tests` | admin | Create |
+| PUT | `/api/tests/:id` | admin | Update |
+| DELETE | `/api/tests/:id` | admin | Delete |
 | GET | `/api/packages` | JWT | All packages |
-| POST | `/api/packages` | admin | Create package |
-| PUT | `/api/packages/:id` | admin | Update package |
+| POST | `/api/packages` | admin | Create |
+| PUT | `/api/packages/:id` | admin | Update |
+
+#### Reviews
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| GET | `/api/reviews` | Public | Approved reviews (for landing page) |
+| POST | `/api/reviews` | patient | Submit review for a completed booking |
+| GET | `/api/reviews/booking/:bookingId` | JWT | Check if booking has a review |
 
 ---
 
@@ -176,74 +264,93 @@ cd services/booking-service && npm run dev
 #### Bookings
 | Method | Endpoint | Roles | Description |
 |---|---|---|---|
-| POST | `/api/bookings` | admin, receptionist, patient | Create booking |
-| GET | `/api/bookings` | admin, receptionist, technician, pathologist | All bookings |
+| POST | `/api/bookings` | admin, receptionist, patient | Create |
+| GET | `/api/bookings` | Staff | All bookings |
+| GET | `/api/bookings/stats` | Staff | Dashboard stats + revenue chart |
 | GET | `/api/bookings/my` | patient | Own bookings |
-| GET | `/api/bookings/patient/:id` | Staff + own patient | Patient bookings |
 | GET | `/api/bookings/slots` | Public | Available time slots |
 | GET | `/api/bookings/:id` | JWT | Booking detail |
 | PUT | `/api/bookings/:id/status` | Staff | Update status |
-| PUT | `/api/bookings/:id/assign` | admin, receptionist | Assign technician |
-| DELETE | `/api/bookings/:id` | admin | Cancel booking |
+| DELETE | `/api/bookings/:id` | admin | Cancel |
 
 #### Samples
 | Method | Endpoint | Roles | Description |
 |---|---|---|---|
-| POST | `/api/samples` | admin, technician, receptionist | Register sample |
+| POST | `/api/samples` | admin, lab_technician, receptionist | Register sample |
 | GET | `/api/samples` | Staff | All samples |
 | GET | `/api/samples/booking/:id` | Staff | Sample for booking |
-| PUT | `/api/samples/:id/status` | admin, technician | Update status |
+| PUT | `/api/samples/:id/status` | admin, lab_technician | Update status |
 
 #### Results
 | Method | Endpoint | Roles | Description |
 |---|---|---|---|
-| POST | `/api/results` | admin, technician | Enter results |
+| POST | `/api/results` | admin, lab_technician | Enter results |
 | GET | `/api/results` | Staff | All results |
 | GET | `/api/results/booking/:id` | Staff | Result for booking |
 | GET | `/api/results/patient/:id` | Staff + own patient | Patient results |
-| PUT | `/api/results/:id/approve` | admin, pathologist | Approve result |
+| PUT | `/api/results/:id/approve` | admin, pathologist | Approve |
 | PUT | `/api/results/:id/reject` | admin, pathologist | Reject with note |
-| POST | `/api/results/:id/generate-report` | Staff | Generate PDF report |
+| POST | `/api/results/:id/generate-report` | Staff | Generate PDF |
 
-#### Invoices
+#### Invoices & Payments
 | Method | Endpoint | Roles | Description |
 |---|---|---|---|
-| POST | `/api/invoices` | admin, receptionist | Create invoice from booking |
+| POST | `/api/invoices` | admin, receptionist | Create from booking |
 | GET | `/api/invoices` | admin, receptionist | All invoices |
-| GET | `/api/invoices/:id` | Staff + own patient | Invoice detail |
+| GET | `/api/invoices/:id` | Staff + own patient | Detail |
 | PUT | `/api/invoices/:id` | admin, receptionist | Update discount/notes |
-| POST | `/api/invoices/:id/payment` | admin, receptionist | Record payment |
-| POST | `/api/invoices/:id/generate-pdf` | admin, receptionist | Generate invoice PDF |
+| POST | `/api/invoices/:id/payment` | admin, receptionist | Record cash/offline payment |
+| POST | `/api/invoices/:id/generate-pdf` | admin, receptionist | Generate PDF |
+| POST | `/api/payments/create-order` | JWT | Create Razorpay order |
+| POST | `/api/payments/verify` | JWT | Verify payment signature |
+| POST | `/api/payments/webhook` | Public (HMAC verified) | Razorpay webhook |
 
 ---
 
 ## Frontend Pages
 
 ### Public
-- `/` — Landing page
-- `/tests` — Test catalog
+- `/` — Landing page with hero, features, popular tests, live patient reviews
+- `/tests` — Full test catalog with search
 - `/about` — About the lab
 - `/contact` — Contact form
 
 ### Auth
-- `/login` — Login (redirects by role)
-- `/register` — Patient self-registration
+- `/login` — Email/password + Google OAuth
+- `/register` — 3-step patient self-registration (auto-logs in on completion)
 
-### Patient Portal (`/dashboard`, `/bookings`, `/reports`, `/profile`)
-- Dashboard with booking stats
-- Book a test (multi-step wizard)
-- Booking history and detail
-- Reports list and PDF download
-- Profile management
+### Patient Portal
+| Route | Description |
+|---|---|
+| `/dashboard` | Stats (total, completed, in-progress, cancelled bookings) + recent bookings |
+| `/bookings` | Booking history with filters, cancel, pay, and review options |
+| `/bookings/:id` | Booking detail with timeline and invoice |
+| `/book-test` | Multi-step test booking wizard |
+| `/reports` | Lab reports list |
+| `/reports/:id` | Report detail + PDF download |
+| `/profile` | Profile management |
 
-### Admin Panel (`/admin/*`)
-- **Patients** — CRUD with search, add/edit modals
-- **Bookings** — Full booking management, status updates
-- **Tests** — Test catalog CRUD with modal forms
-- **Packages** — Bundle tests into packages
-- **Lab** — Sample tracking + result entry + approval
-- **Billing** — Invoice generation, payment recording, PDF export
-- **Staff Management** — Create staff accounts by role
+### Staff Panel (`/admin/*`)
+| Route | Description |
+|---|---|
+| `/admin` | Admin dashboard — live stats, revenue chart, recent bookings & patients |
+| `/admin/patients` | Patient list with search and CRUD |
+| `/admin/bookings` | All bookings with filters and status management |
+| `/admin/tests` | Test catalog management |
+| `/admin/packages` | Health package management |
+| `/admin/lab` | Sample tracking + result entry |
+| `/admin/lab/results/:id` | Result detail and approval |
+| `/admin/billing` | Invoice list |
+| `/admin/billing/:id` | Invoice detail + payment recording |
+| `/admin/reports` | Reports overview |
+| `/admin/staff` | Create staff accounts (admin only) |
+
+### Staff Dashboards (role-specific landing pages)
+| Role | Landing Route |
+|---|---|
+| admin | `/admin` |
+| lab_technician / pathologist | `/admin/lab` |
+| receptionist | `/admin/bookings` |
 
 ---
 
@@ -263,24 +370,40 @@ cd services/booking-service && npm run dev
 
 ## PDF Generation
 
-Both report and invoice PDFs are generated server-side using **PDFKit** and saved to:
+Report and invoice PDFs are generated server-side with **PDFKit** and saved to:
 
 ```
 services/booking-service/uploads/
-├── reports/     # RES-XXXXXX.pdf
-└── invoices/    # INV-XXXXXX.pdf
+├── reports/      # RES-XXXXXX.pdf
+└── invoices/     # INV-XXXXXX.pdf
 ```
 
 Served statically at `http://localhost:3002/uploads/...`
 
 ---
 
-## Lab — Prathamesh Advanced Diagnostic Center
+## Patient Reviews
 
-- Location: Nashik, Maharashtra
-- NABL Accredited · ISO 15189 Certified
-- 200+ diagnostic tests available
-- 24-hour report turnaround
+Patients can leave a review after a completed booking from the bookings page. Reviews are stored in MongoDB and displayed live on the landing page testimonials carousel. The carousel falls back to static reviews if the API is unreachable.
+
+---
+
+## Database Scripts
+
+```bash
+npm run seed-db    # Seed all collections with realistic data
+npm run reset-db   # Wipe all collections (irreversible)
+```
+
+---
+
+## Lab Info
+
+- **Name:** Prathamesh Advanced Diagnostic Center
+- **Location:** Nashik, Maharashtra
+- **Tests:** 40+ across Hematology, Biochemistry, Thyroid, Urine, Immunology, Hormones
+- **Packages:** 6 curated health packages (Basic, Full Body, Diabetes, Cardiac, Women's, Thyroid)
+- **Turnaround:** 1–48 hours depending on test
 
 ---
 

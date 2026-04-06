@@ -17,11 +17,11 @@ interface Booking {
     totalAmount: number;
     discountAmount: number;
     finalAmount: number;
-    bookingType: string;
+    collectionType: string;
     status: string;
-    appointmentDate: string;
-    appointmentSlot: string;
-    address?: { street?: string; city?: string; state?: string; pincode?: string };
+    scheduledDate: string;
+    scheduledTime: string;
+    collectionAddress?: { street?: string; city?: string; state?: string; pincode?: string };
     paymentStatus: string;
     createdAt: string;
 }
@@ -181,7 +181,7 @@ export default function BookingDetailPage() {
                         <div>
                             <p className="text-slate-400 text-xs">Date</p>
                             <p className="text-slate-700 text-sm font-semibold">
-                                {new Date(booking.appointmentDate).toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "long", year: "numeric" })}
+                                {new Date(booking.scheduledDate).toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "long", year: "numeric" })}
                             </p>
                         </div>
                     </div>
@@ -189,24 +189,24 @@ export default function BookingDetailPage() {
                         <Clock className="w-4 h-4 text-cyan-500 mt-0.5 flex-shrink-0" strokeWidth={1.8} />
                         <div>
                             <p className="text-slate-400 text-xs">Time slot</p>
-                            <p className="text-slate-700 text-sm font-semibold">{booking.appointmentSlot}</p>
+                            <p className="text-slate-700 text-sm font-semibold">{booking.scheduledTime}</p>
                         </div>
                     </div>
                     <div className="flex items-start gap-3">
-                        {booking.bookingType === "home-collection"
+                        {booking.collectionType === "home-collection"
                             ? <Home className="w-4 h-4 text-violet-500 mt-0.5 flex-shrink-0" strokeWidth={1.8} />
                             : <Building2 className="w-4 h-4 text-violet-500 mt-0.5 flex-shrink-0" strokeWidth={1.8} />}
                         <div>
                             <p className="text-slate-400 text-xs">Collection</p>
-                            <p className="text-slate-700 text-sm font-semibold">{booking.bookingType === "home-collection" ? "Home Collection" : "Lab Visit"}</p>
+                            <p className="text-slate-700 text-sm font-semibold">{booking.collectionType === "home-collection" ? "Home Collection" : "Lab Visit"}</p>
                         </div>
                     </div>
-                    {booking.address?.street && (
+                    {booking.collectionAddress?.street && (
                         <div className="flex items-start gap-3">
                             <MapPin className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" strokeWidth={1.8} />
                             <div>
                                 <p className="text-slate-400 text-xs">Address</p>
-                                <p className="text-slate-700 text-sm">{[booking.address.street, booking.address.city].filter(Boolean).join(", ")}</p>
+                                <p className="text-slate-700 text-sm">{[booking.collectionAddress.street, booking.collectionAddress.city].filter(Boolean).join(", ")}</p>
                             </div>
                         </div>
                     )}
