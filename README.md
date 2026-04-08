@@ -3,6 +3,8 @@
 > A production-grade, full-stack lab management platform built for **Prathamesh Advanced Diagnostic Center**, Nashik.  
 > Handles patient registration, test bookings, sample tracking, result entry, report generation, billing, and patient reviews — end to end.
 
+**UI last updated:** April 2026 — redesigned landing page, patient dashboard with health analytics, admin dashboard with revenue trend chart, glassmorphism testimonials, and lab report showcase section.
+
 ---
 
 ## Tech Stack
@@ -11,6 +13,7 @@
 |---|---|
 | Monorepo | Turborepo + npm workspaces |
 | Frontend | Next.js 14 (App Router), Tailwind CSS, Zustand, Axios, React Hook Form, Zod |
+| UI / Animation | Framer Motion, Lucide React, custom SVG sparklines |
 | Auth | JWT (custom) + NextAuth.js (Google OAuth), RBAC middleware |
 | Patient Service | Node.js, Express, MongoDB (Mongoose), bcrypt, Redis |
 | Booking Service | Node.js, Express, MongoDB (Mongoose), PDFKit, date-fns |
@@ -34,9 +37,14 @@ smartpath/
 │       │   ├── auth/google/callback/ # Google OAuth callback handler
 │       │   └── api/auth/[...nextauth]/ # NextAuth.js route
 │       ├── components/
-│       │   ├── admin/                # StatsRow, RevenueChart, BookingsTable, PatientsList
+│       │   ├── admin/                # StatsRow, RevenueChart (sparkline + bars), BookingsTable, PatientsList
 │       │   ├── booking/              # Multi-step booking wizard components
-│       │   ├── landing/              # Hero, Features, Testimonials, etc.
+│       │   ├── landing/
+│       │   │   ├── Hero.tsx          # Typing animation, zigzag image cluster, teal CTA
+│       │   │   ├── Features.tsx      # Card carousel with prescription upload modal
+│       │   │   ├── MarqueeBar.tsx    # Scrolling trust badges
+│       │   │   ├── ReportShowcase.tsx# Lab report image with annotated side labels (replaces HowItWorks + PopularTests)
+│       │   │   └── Testimonials.tsx  # 2×3 glassmorphism review grid
 │       │   ├── layout/               # Navbar, Sidebar, AdminSidebar, Footer, MobileNav
 │       │   ├── patient/              # ReviewModal
 │       │   └── shared/               # ConfirmDialog, LoadingSpinner, EmptyState
@@ -310,7 +318,7 @@ SmartPath uses a dual auth system:
 ## Frontend Pages
 
 ### Public
-- `/` — Landing page with hero, features, popular tests, live patient reviews
+- `/` — Landing page: hero (typing animation + teal CTA), features carousel, lab report showcase with annotated labels, glassmorphism patient reviews
 - `/tests` — Full test catalog with search
 - `/about` — About the lab
 - `/contact` — Contact form
@@ -322,7 +330,7 @@ SmartPath uses a dual auth system:
 ### Patient Portal
 | Route | Description |
 |---|---|
-| `/dashboard` | Stats (total, completed, in-progress, cancelled bookings) + recent bookings |
+| `/dashboard` | Health analytics (activity trend chart, health metric cards), stats, quick actions, recent bookings |
 | `/bookings` | Booking history with filters, cancel, pay, and review options |
 | `/bookings/:id` | Booking detail with timeline and invoice |
 | `/book-test` | Multi-step test booking wizard |
@@ -333,7 +341,7 @@ SmartPath uses a dual auth system:
 ### Staff Panel (`/admin/*`)
 | Route | Description |
 |---|---|
-| `/admin` | Admin dashboard — live stats, revenue chart, recent bookings & patients |
+| `/admin` | Admin dashboard — live stats with glow cards, SVG sparkline + bar revenue trend chart, recent bookings & patients |
 | `/admin/patients` | Patient list with search and CRUD |
 | `/admin/bookings` | All bookings with filters and status management |
 | `/admin/tests` | Test catalog management |
@@ -384,7 +392,20 @@ Served statically at `http://localhost:3002/uploads/...`
 
 ## Patient Reviews
 
-Patients can leave a review after a completed booking from the bookings page. Reviews are stored in MongoDB and displayed live on the landing page testimonials carousel. The carousel falls back to static reviews if the API is unreachable.
+Patients can leave a review after a completed booking from the bookings page. Reviews are stored in MongoDB and displayed live on the landing page as a 2×3 glassmorphism grid. The grid falls back to 6 static reviews if the API is unreachable.
+
+---
+
+## UI Design System
+
+The frontend follows a consistent design language across all pages:
+
+- **Colors:** `teal-600` / `cyan-400` primary accents, `slate-800` headings, `slate-500` body text, `#0f172a` dark navy for CTAs
+- **Background:** `bg-gradient-to-br from-slate-50 via-white to-teal-50/30` with subtle teal grid overlay and soft glow orbs
+- **Typography:** `Instrument Serif` for display headings, system sans-serif for body
+- **Cards:** `rounded-2xl`, `border border-slate-100`, `shadow-sm hover:shadow-md` — glassmorphism variant uses `backdrop-blur` + `rgba(255,255,255,0.55)` with teal border
+- **Badges:** Teal pill with animated pulse dot — used consistently across all sections
+- **Animations:** Intersection Observer scroll-triggered fade + slide-in, staggered delays per card
 
 ---
 
