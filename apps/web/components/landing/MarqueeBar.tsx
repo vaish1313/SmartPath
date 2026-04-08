@@ -35,10 +35,10 @@ const tests = [
 
 export default function MarqueeBar() {
     return (
-        <div className="relative py-5 overflow-hidden bg-gradient-to-r from-teal-600 via-teal-500 to-cyan-500 shadow-lg shadow-teal-200">
+        <div className="relative py-5 overflow-hidden shadow-lg" style={{ background: "linear-gradient(135deg, #0f172a 0%, #0d2a27 60%, #0f2a2a 100%)" }}>
             {/* Fade edges */}
-            <div className="absolute left-0 top-0 bottom-0 w-24 z-10 bg-gradient-to-r from-teal-600 to-transparent pointer-events-none" />
-            <div className="absolute right-0 top-0 bottom-0 w-24 z-10 bg-gradient-to-l from-cyan-500 to-transparent pointer-events-none" />
+            <div className="absolute left-0 top-0 bottom-0 w-24 z-10 pointer-events-none" style={{ background: "linear-gradient(to right, #0f172a, transparent)" }} />
+            <div className="absolute right-0 top-0 bottom-0 w-24 z-10 pointer-events-none" style={{ background: "linear-gradient(to left, #0f2a2a, transparent)" }} />
 
             <div className="flex animate-marquee whitespace-nowrap gap-0">
                 {[...Array(2)].map((_, ri) =>

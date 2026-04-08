@@ -2,8 +2,7 @@ import Navbar from "@/components/layout/Navbar";
 import HeroSection from "@/components/landing/Hero";
 import MarqueeBar from "@/components/landing/MarqueeBar";
 import Features from "@/components/landing/Features";
-import HowItWorks from "@/components/landing/HowItWorks";
-import PopularTests from "@/components/landing/PopularTests";
+import ReportShowcase from "@/components/landing/ReportShowcase";
 import Testimonials from "@/components/landing/Testimonials";
 import Footer from "@/components/layout/Footer";
 
@@ -14,8 +13,7 @@ export default function LandingPage() {
             <HeroSection />
             <MarqueeBar />
             <Features />
-            <HowItWorks />
-            <PopularTests />
+            <ReportShowcase />
             <Testimonials />
             <Footer />
         </div>

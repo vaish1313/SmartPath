@@ -96,7 +96,8 @@ export default function RegisterPage() {
         <div className="min-h-screen bg-white flex">
 
             {/* ── Left branding panel ── */}
-            <div className="hidden lg:flex lg:w-[52%] relative flex-col justify-between p-12 overflow-hidden bg-gradient-to-br from-teal-600 to-cyan-600">
+            <div className="hidden lg:flex lg:w-[52%] relative flex-col justify-between p-12 overflow-hidden"
+                style={{ background: "linear-gradient(135deg, #0f172a 0%, #0d2a27 60%, #0f2a2a 100%)" }}>
                 <div className="absolute inset-0 pointer-events-none opacity-10"
                     style={{
                         backgroundImage: "linear-gradient(rgba(255,255,255,0.2) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.2) 1px,transparent 1px)",
@@ -258,7 +259,7 @@ export default function RegisterPage() {
                                     </div>
                                 )}
                             </div>
-                            <button type="submit" className="w-full flex items-center justify-center gap-2 bg-teal-600 hover:bg-teal-700 text-white font-bold text-sm rounded-xl py-3.5 transition-all shadow-lg shadow-teal-200 group">
+                            <button type="submit" className="w-full flex items-center justify-center gap-2 bg-[#0f172a] hover:bg-[#1e293b] text-white font-bold text-sm rounded-xl py-3.5 transition-all shadow-lg shadow-slate-300 group">
                                 Continue <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
                             </button>
                         </form>
@@ -298,7 +299,7 @@ export default function RegisterPage() {
                             </div>
                             <div className="flex gap-3 pt-1">
                                 <button type="button" onClick={() => setStep(0)} className="flex-1 bg-white border border-slate-200 rounded-xl py-3 text-slate-500 hover:text-slate-700 hover:border-slate-300 text-sm transition-all shadow-sm">Back</button>
-                                <button type="submit" className="flex-1 flex items-center justify-center gap-2 bg-teal-600 hover:bg-teal-700 text-white font-bold text-sm rounded-xl py-3 transition-all shadow-lg shadow-teal-200 group">
+                                <button type="submit" className="flex-1 flex items-center justify-center gap-2 bg-[#0f172a] hover:bg-[#1e293b] text-white font-bold text-sm rounded-xl py-3 transition-all shadow-lg shadow-slate-300 group">
                                     Continue <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
                                 </button>
                             </div>
@@ -333,7 +334,7 @@ export default function RegisterPage() {
                             </div>
                             <div className="flex gap-3">
                                 <button type="button" onClick={() => setStep(1)} className="flex-1 bg-white border border-slate-200 rounded-xl py-3 text-slate-500 hover:text-slate-700 hover:border-slate-300 text-sm transition-all shadow-sm">Back</button>
-                                <button type="submit" disabled={isSubmitting} className="flex-1 flex items-center justify-center gap-2 bg-teal-600 hover:bg-teal-700 disabled:opacity-60 text-white font-bold text-sm rounded-xl py-3 transition-all shadow-lg shadow-teal-200">
+                                <button type="submit" disabled={isSubmitting} className="flex-1 flex items-center justify-center gap-2 bg-[#0f172a] hover:bg-[#1e293b] disabled:opacity-60 text-white font-bold text-sm rounded-xl py-3 transition-all shadow-lg shadow-slate-300">
                                     {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Create account"}
                                 </button>
                             </div>

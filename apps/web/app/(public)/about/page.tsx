@@ -8,13 +8,18 @@ export default function AboutPage() {
             <Navbar />
             <div className="pt-16">
                 {/* Hero */}
-                <div className="bg-gradient-to-br from-teal-600 to-cyan-600 py-20 px-6 lg:px-16 text-center">
-                    <h1 className="text-4xl font-bold text-white mb-4" style={{ fontFamily: "'Instrument Serif', serif" }}>
-                        About Prathamesh Diagnostic
-                    </h1>
-                    <p className="text-teal-100 max-w-xl mx-auto text-base leading-relaxed">
-                        NABL accredited pathology lab in Nashik, delivering accurate diagnostics with compassion since 2005.
-                    </p>
+                <div className="py-20 px-6 lg:px-16 text-center relative overflow-hidden"
+                    style={{ background: "linear-gradient(135deg, #0f172a 0%, #0d2a27 60%, #0f2a2a 100%)" }}>
+                    <div className="absolute inset-0 pointer-events-none opacity-[0.04]"
+                        style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E\")" }} />
+                    <div className="relative z-10">
+                        <h1 className="text-4xl font-bold text-white mb-4" style={{ fontFamily: "'Instrument Serif', serif" }}>
+                            About Prathamesh Diagnostic
+                        </h1>
+                        <p className="text-teal-200/70 max-w-xl mx-auto text-base leading-relaxed">
+                            NABL accredited pathology lab in Nashik, delivering accurate diagnostics with compassion since 2005.
+                        </p>
+                    </div>
                 </div>
 
                 {/* Stats */}

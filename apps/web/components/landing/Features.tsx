@@ -1,8 +1,15 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { CalendarCheck, ScanLine, FileText, Bell, ShieldCheck, Clock, Upload, X } from "lucide-react";
+import { useState } from "react";
+import dynamic from "next/dynamic";
+import { Upload, X, CalendarCheck, ScanLine, FileText, Bell, ShieldCheck, Clock } from "lucide-react";
 import Link from "next/link";
+import type { FeatureCard } from "@/components/ui/card-carousel";
+
+const CardCarousel = dynamic(
+    () => import("@/components/ui/card-carousel").then((m) => m.CardCarousel),
+    { ssr: false }
+);
 
 function Badge({ children }: { children: React.ReactNode }) {
     return (
@@ -13,21 +20,65 @@ function Badge({ children }: { children: React.ReactNode }) {
     );
 }
 
-const features = [
-    { icon: CalendarCheck, title: "Online Test Booking", desc: "Select from 200+ tests, pick a time slot, and book from home. No queues, no calls.", accent: "teal" },
-    { icon: ScanLine, title: "Live Sample Tracking", desc: "Track your sample from collection to processing in real time with QR-based status.", accent: "cyan" },
-    { icon: FileText, title: "Digital Reports", desc: "Download NABL-certified PDF reports instantly. Share with your doctor in one click.", accent: "violet" },
-    { icon: Bell, title: "Smart Alerts", desc: "Get SMS and email notifications when your report is ready or sample is processed.", accent: "amber" },
-    { icon: ShieldCheck, title: "Secure & Private", desc: "Your health data is encrypted and stored securely. Only you can access your records.", accent: "teal" },
-    { icon: Clock, title: "24hr Turnaround", desc: "Most tests are processed and reported within 24 hours of sample collection.", accent: "cyan" },
+const featureCards: FeatureCard[] = [
+    {
+        icon: Upload,
+        title: "Upload Prescription & Book Instantly",
+        desc: "AI reads your prescription and auto-selects the right tests. No manual searching — just upload and confirm.",
+        accent: "teal",
+        stat: "< 5s",
+        statLabel: "avg. scan time",
+        highlight: true,
+    },
+    {
+        icon: CalendarCheck,
+        title: "Online Test Booking",
+        desc: "Select from 200+ tests, pick a time slot, and book from home. No queues, no calls.",
+        accent: "teal",
+        stat: "200+",
+        statLabel: "tests available",
+    },
+    {
+        icon: ScanLine,
+        title: "Live Sample Tracking",
+        desc: "Track your sample from collection to processing in real time with QR-based status updates.",
+        accent: "cyan",
+        stat: "100%",
+        statLabel: "real-time visibility",
+    },
+    {
+        icon: FileText,
+        title: "Digital Reports",
+        desc: "Download NABL-certified PDF reports instantly. Share with your doctor in one click.",
+        accent: "violet",
+        stat: "24hr",
+        statLabel: "report delivery",
+    },
+    {
+        icon: Bell,
+        title: "Smart Alerts",
+        desc: "Get SMS and email notifications when your report is ready or your sample is processed.",
+        accent: "amber",
+        stat: "2-step",
+        statLabel: "instant notify",
+    },
+    {
+        icon: ShieldCheck,
+        title: "Secure & Private",
+        desc: "Your health data is encrypted and stored securely. Only you can access your records.",
+        accent: "blue",
+        stat: "256-bit",
+        statLabel: "encryption",
+    },
+    {
+        icon: Clock,
+        title: "24hr Turnaround",
+        desc: "Most tests are processed and reported within 24 hours of sample collection.",
+        accent: "rose",
+        stat: "24hr",
+        statLabel: "avg. turnaround",
+    },
 ];
-
-const accentMap: Record<string, { icon: string; bg: string; bigBg: string }> = {
-    teal: { icon: "text-teal-600", bg: "bg-teal-50", bigBg: "bg-teal-50" },
-    cyan: { icon: "text-cyan-600", bg: "bg-cyan-50", bigBg: "bg-cyan-50" },
-    violet: { icon: "text-violet-600", bg: "bg-violet-50", bigBg: "bg-violet-50" },
-    amber: { icon: "text-amber-600", bg: "bg-amber-50", bigBg: "bg-amber-50" },
-};
 
 function PrescriptionModal({ onClose }: { onClose: () => void }) {
     return (
@@ -43,7 +94,7 @@ function PrescriptionModal({ onClose }: { onClose: () => void }) {
                 <p className="text-slate-500 text-sm mb-6">To use this feature, you need a SmartPath account.</p>
                 <div className="flex gap-3">
                     <Link href="/register"
-                        className="flex-1 flex items-center justify-center bg-teal-600 hover:bg-teal-700 text-white font-bold text-sm rounded-xl py-2.5 transition-all shadow-md shadow-teal-200">
+                        className="flex-1 flex items-center justify-center bg-[#0f172a] hover:bg-[#1e293b] text-white font-bold text-sm rounded-xl py-2.5 transition-all shadow-md shadow-slate-300">
                         Create Account
                     </Link>
                     <Link href="/login"
@@ -57,15 +108,7 @@ function PrescriptionModal({ onClose }: { onClose: () => void }) {
 }
 
 export default function Features() {
-    const [visible, setVisible] = useState(false);
     const [showModal, setShowModal] = useState(false);
-    const ref = useRef<HTMLDivElement>(null);
-
-    useEffect(() => {
-        const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) setVisible(true); }, { threshold: 0.1 });
-        if (ref.current) obs.observe(ref.current);
-        return () => obs.disconnect();
-    }, []);
 
     return (
         <section className="py-24 px-6 lg:px-16 bg-white">
@@ -86,85 +129,13 @@ export default function Features() {
                     </p>
                 </div>
 
-                <div ref={ref} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {/* Prescription upload — highlighted card */}
-                    <button
-                        onClick={() => setShowModal(true)}
-                        className="group rounded-2xl overflow-hidden border-2 border-teal-400 shadow-md flex flex-col bg-gradient-to-br from-teal-600 to-cyan-600 text-left cursor-pointer"
-                        style={{
-                            transition: "transform 0.3s ease, box-shadow 0.3s ease, opacity 0.5s ease, translate 0.5s ease",
-                            opacity: visible ? 1 : 0,
-                            translate: visible ? "0 0" : "0 28px",
-                            transitionDelay: "0ms",
-                        }}
-                        onMouseEnter={(e) => {
-                            (e.currentTarget as HTMLButtonElement).style.transform = "translateY(-4px)";
-                            (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 16px 40px rgba(20,184,166,0.35)";
-                        }}
-                        onMouseLeave={(e) => {
-                            (e.currentTarget as HTMLButtonElement).style.transform = "translateY(0)";
-                            (e.currentTarget as HTMLButtonElement).style.boxShadow = "";
-                        }}
-                    >
-                        <div className="relative h-44 w-full flex items-center justify-center bg-white/10">
-                            <div className="w-20 h-20 rounded-3xl flex items-center justify-center bg-white/20 group-hover:scale-110 transition-transform duration-300">
-                                <Upload className="w-10 h-10 text-white" strokeWidth={1.5} />
-                            </div>
-                            <div className="absolute top-3 right-3 bg-white/20 text-white text-[10px] font-bold px-2.5 py-1 rounded-full tracking-wider uppercase">
-                                AI Powered
-                            </div>
-                        </div>
-                        <div className="p-5 flex flex-col gap-2 flex-1">
-                            <div className="flex items-center gap-2.5">
-                                <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 bg-white/20">
-                                    <Upload className="w-3.5 h-3.5 text-white" strokeWidth={1.8} />
-                                </div>
-                                <h3 className="text-white font-semibold text-sm">Upload Prescription & Book Instantly</h3>
-                            </div>
-                            <p className="text-teal-100 text-sm leading-relaxed">AI reads your prescription and auto-selects tests</p>
-                        </div>
-                    </button>
-
-                    {features.map(({ icon: Icon, title, desc, accent }, i) => {
-                        const a = accentMap[accent];
-                        return (
-                            <div
-                                key={title}
-                                className="group rounded-2xl overflow-hidden border border-slate-100 shadow-sm flex flex-col bg-white"
-                                style={{
-                                    transition: "transform 0.3s ease, box-shadow 0.3s ease, opacity 0.5s ease, translate 0.5s ease",
-                                    opacity: visible ? 1 : 0,
-                                    translate: visible ? "0 0" : "0 28px",
-                                    transitionDelay: `${(i + 1) * 150}ms`,
-                                }}
-                                onMouseEnter={(e) => {
-                                    (e.currentTarget as HTMLDivElement).style.transform = "translateY(-4px)";
-                                    (e.currentTarget as HTMLDivElement).style.boxShadow = "0 12px 32px rgba(0,0,0,0.10)";
-                                }}
-                                onMouseLeave={(e) => {
-                                    (e.currentTarget as HTMLDivElement).style.transform = "translateY(0)";
-                                    (e.currentTarget as HTMLDivElement).style.boxShadow = "";
-                                }}
-                            >
-                                <div className={`relative h-44 w-full flex items-center justify-center ${a.bigBg}`}>
-                                    <div className={`w-20 h-20 rounded-3xl flex items-center justify-center ${a.bg} shadow-sm group-hover:scale-110 transition-transform duration-300`}>
-                                        <Icon className={`w-10 h-10 ${a.icon}`} strokeWidth={1.5} />
-                                    </div>
-                                    <div className="absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-white/60 to-transparent" />
-                                </div>
-                                <div className="p-5 flex flex-col gap-2 flex-1">
-                                    <div className="flex items-center gap-2.5">
-                                        <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${a.bg}`}>
-                                            <Icon className={`w-3.5 h-3.5 ${a.icon}`} strokeWidth={1.8} />
-                                        </div>
-                                        <h3 className="text-[#1a2332] font-semibold text-sm">{title}</h3>
-                                    </div>
-                                    <p className="text-slate-500 text-sm leading-relaxed">{desc}</p>
-                                </div>
-                            </div>
-                        );
-                    })}
-                </div>
+                <CardCarousel
+                    cards={featureCards}
+                    autoplayDelay={2000}
+                    showPagination={true}
+                    showNavigation={true}
+                    onHighlightClick={() => setShowModal(true)}
+                />
             </div>
         </section>
     );

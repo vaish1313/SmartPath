@@ -206,7 +206,7 @@ export default function HeroSection() {
                         >
                             <Link
                                 href="/register"
-                                className="flex items-center justify-center gap-2 bg-teal-600 hover:bg-teal-700 text-white font-bold text-sm px-7 py-4 rounded-2xl transition-all shadow-lg shadow-teal-600/20 group"
+                                className="flex items-center justify-center gap-2 bg-teal-600 hover:bg-teal-700 text-white font-bold text-sm px-7 py-4 rounded-2xl transition-all shadow-lg shadow-teal-400/30 group"
                             >
                                 Book a test now
                                 <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />

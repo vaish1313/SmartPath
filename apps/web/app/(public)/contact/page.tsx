@@ -8,9 +8,14 @@ export default function ContactPage() {
             <Navbar />
             <div className="pt-16">
                 {/* Hero */}
-                <div className="bg-gradient-to-br from-teal-600 to-cyan-600 py-16 px-6 lg:px-16 text-center">
-                    <h1 className="text-4xl font-bold text-white mb-3" style={{ fontFamily: "'Instrument Serif', serif" }}>Contact Us</h1>
-                    <p className="text-teal-100 max-w-md mx-auto">We're here to help. Reach out for appointments, queries, or support.</p>
+                <div className="py-16 px-6 lg:px-16 text-center relative overflow-hidden"
+                    style={{ background: "linear-gradient(135deg, #0f172a 0%, #0d2a27 60%, #0f2a2a 100%)" }}>
+                    <div className="absolute inset-0 pointer-events-none opacity-[0.04]"
+                        style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E\")" }} />
+                    <div className="relative z-10">
+                        <h1 className="text-4xl font-bold text-white mb-3" style={{ fontFamily: "'Instrument Serif', serif" }}>Contact Us</h1>
+                        <p className="text-teal-200/70 max-w-md mx-auto">We're here to help. Reach out for appointments, queries, or support.</p>
+                    </div>
                 </div>
 
                 <div className="max-w-5xl mx-auto px-6 lg:px-8 py-14 grid grid-cols-1 lg:grid-cols-2 gap-10">
@@ -62,7 +67,7 @@ export default function ContactPage() {
                                 <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Message</label>
                                 <textarea rows={4} placeholder="How can we help you?" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 text-sm outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100 transition-all resize-none" />
                             </div>
-                            <button type="submit" className="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold text-sm py-3.5 rounded-xl transition-all shadow-lg shadow-teal-200">
+                            <button type="submit" className="w-full bg-[#0f172a] hover:bg-[#1e293b] text-white font-bold text-sm py-3.5 rounded-xl transition-all shadow-lg shadow-slate-300">
                                 Send Message
                             </button>
                         </form>

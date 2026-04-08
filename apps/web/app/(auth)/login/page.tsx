@@ -60,7 +60,8 @@ export default function LoginPage() {
         <div className="min-h-screen bg-white flex">
 
             {/* ── Left branding panel ── */}
-            <div className="hidden lg:flex lg:w-[52%] relative flex-col justify-between p-12 overflow-hidden bg-gradient-to-br from-teal-600 to-cyan-600">
+            <div className="hidden lg:flex lg:w-[52%] relative flex-col justify-between p-12 overflow-hidden"
+                style={{ background: "linear-gradient(135deg, #0f172a 0%, #0d2a27 60%, #0f2a2a 100%)" }}>
                 <div className="absolute inset-0 pointer-events-none opacity-10"
                     style={{
                         backgroundImage: "linear-gradient(rgba(255,255,255,0.2) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.2) 1px,transparent 1px)",
@@ -211,7 +212,7 @@ export default function LoginPage() {
                         <button
                             type="submit"
                             disabled={isSubmitting}
-                            className="w-full flex items-center justify-center gap-2 bg-teal-600 hover:bg-teal-700 disabled:opacity-60 text-white font-bold text-sm rounded-xl py-3.5 transition-all shadow-lg shadow-teal-200 group"
+                            className="w-full flex items-center justify-center gap-2 bg-[#0f172a] hover:bg-[#1e293b] disabled:opacity-60 text-white font-bold text-sm rounded-xl py-3.5 transition-all shadow-lg shadow-slate-300 group"
                         >
                             {isSubmitting ? (
                                 <Loader2 className="w-4 h-4 animate-spin" />
