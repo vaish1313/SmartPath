@@ -105,7 +105,7 @@ async function main() {
   const bookingServiceOk = await checkService('Booking Service', 3002);
   const reportServiceOk = await checkService('Report Service', 3003);
   
-  console.log(`\n${COLORS.cyan}[3] Checking API Endpoints...${COLORS.reset}`);
+  console.log(`\n${COLORS.cyan}[3] Checking A...${COLORS.reset}`);
   const testsOk = await checkAPIEndpoint('Tests API', 'http://localhost:3001/api/tests');
   const packagesOk = await checkAPIEndpoint('Packages API', 'http://localhost:3001/api/packages');
   const statsOk = await checkAPIEndpoint('Stats API', 'http://localhost:3002/api/bookings/stats', true);
