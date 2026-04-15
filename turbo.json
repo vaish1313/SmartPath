@@ -4,7 +4,23 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": [".next/**", "dist/**"]
+      "outputs": [".next/**", "dist/**"],
+      "env": [
+        "GOOGLE_CLIENT_ID",
+        "GOOGLE_CLIENT_SECRET",
+        "NEXTAUTH_SECRET",
+        "NEXTAUTH_URL",
+        "PATIENT_SERVICE_URL",
+        "BOOKING_SERVICE_URL",
+        "LAB_SERVICE_URL",
+        "REPORT_SERVICE_URL",
+        "NOTIFICATION_SERVICE_URL",
+        "BILLING_SERVICE_URL",
+        "MONGODB_URI",
+        "RAZORPAY_KEY_ID",
+        "RAZORPAY_KEY_SECRET",
+        "GOOGLE_VISION_API_KEY"
+      ]
     },
     "dev": {
       "cache": false,
@@ -18,4 +34,3 @@
     }
   }
 }
-

@@ -121,6 +121,34 @@ npm run build      # Build all packages
 
 ---
 
+## 🐳 Docker Deployment
+
+### Quick Start with Docker
+
+```bash
+# Development
+cd infrastructure/docker
+docker compose up -d
+
+# Production
+docker compose -f docker-compose.prod.yml up -d --build
+```
+
+### Automated Deployment
+
+```bash
+# Windows
+.\deploy.ps1
+
+# Linux/Mac
+chmod +x deploy.sh
+./deploy.sh
+```
+
+**See `DEPLOYMENT_GUIDE.md` for complete deployment instructions.**
+
+---
+
 ## 🏥 Lab Info
 
 **Prathamesh Advanced Diagnostic Center**  

@@ -227,8 +227,6 @@ export default function AdminBookingsPage() {
                     )}
                 </div>
             </main>
-            );
-}
 
             {/* New Booking Modal - Redirect to Full Form */}
             {modal === "new" && (

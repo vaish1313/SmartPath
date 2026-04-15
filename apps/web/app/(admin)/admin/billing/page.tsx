@@ -289,8 +289,6 @@ export default function AdminBillingPage() {
                     )}
                 </div>
             </main>
-            );
-}
 
             {/* New Invoice Modal */}
             {modal && (

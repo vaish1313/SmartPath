@@ -389,8 +389,6 @@ export default function AdminLabPage() {
                     )}
                 </div>
             </main>
-            );
-}
 
             {/* New Sample Modal */}
             {
