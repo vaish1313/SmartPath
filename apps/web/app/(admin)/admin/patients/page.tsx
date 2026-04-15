@@ -108,7 +108,8 @@ export default function AdminPatientsPage() {
                 const p = res.data.patient;
                 reset({
                     fullName: p.fullName, phone: p.phone, email: p.email,
-                    gender: p.gender, bloodGroup: p.bloodGroup,
+                    gender: p.gender as "male" | "female" | "other" | undefined,
+                    bloodGroup: p.bloodGroup as "A+" | "A-" | "B+" | "B-" | "AB+" | "AB-" | "O+" | "O-" | undefined,
                     dateOfBirth: p.dateOfBirth ? p.dateOfBirth.split("T")[0] : "",
                     street: p.address?.street || "", city: p.address?.city || "", pincode: p.address?.pincode || "",
                 });
@@ -122,7 +123,8 @@ export default function AdminPatientsPage() {
         const p = viewPatient;
         reset({
             fullName: p.fullName, phone: p.phone, email: p.email,
-            gender: p.gender, bloodGroup: p.bloodGroup,
+            gender: p.gender as "male" | "female" | "other" | undefined,
+            bloodGroup: p.bloodGroup as "A+" | "A-" | "B+" | "B-" | "AB+" | "AB-" | "O+" | "O-" | undefined,
             dateOfBirth: p.dateOfBirth ? p.dateOfBirth.split("T")[0] : "",
             street: p.address?.street || "", city: p.address?.city || "", pincode: p.address?.pincode || "",
         });
