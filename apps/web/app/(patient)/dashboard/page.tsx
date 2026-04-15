@@ -193,9 +193,9 @@ export default function DashboardPage() {
     // Extract latest health metrics from test results
     const getLatestMetric = (testName: string) => {
         const result = results
+            .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
             .flatMap(r => r.tests)
-            .filter(t => t.testName.toLowerCase().includes(testName.toLowerCase()))
-            .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())[0];
+            .find(t => t.testName.toLowerCase().includes(testName.toLowerCase()));
         return result || null;
     };
 
