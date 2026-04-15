@@ -98,6 +98,7 @@ export default function BookTestPage() {
         setRxUnmatched([]);
         setRxStructuredData(null);
         try {
+            // Convert image to base64
             const base64 = await new Promise<string>((resolve) => {
                 const reader = new FileReader();
                 reader.onload = (e) => {
@@ -106,74 +107,40 @@ export default function BookTestPage() {
                 };
                 reader.readAsDataURL(rxFile);
             });
-            const mediaType = rxFile.type as "image/jpeg" | "image/png" | "image/gif" | "image/webp";
-            const res = await fetch("https://api.anthropic.com/v1/messages", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "x-api-key": process.env.NEXT_PUBLIC_ANTHROPIC_API_KEY || "",
-                    "anthropic-version": "2023-06-01",
-                },
-                body: JSON.stringify({
-                    model: "claude-sonnet-4-20250514",
-                    max_tokens: 2000,
-                    messages: [{
-                        role: "user",
-                        content: [
-                            { type: "image", source: { type: "base64", media_type: mediaType, data: base64 } },
+
+            // Step 1: Extract text using Google Cloud Vision API
+            const visionRes = await fetch(
+                `https://vision.googleapis.com/v1/images:annotate?key=${process.env.NEXT_PUBLIC_GOOGLE_VISION_API_KEY}`,
+                {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        requests: [
                             {
-                                type: "text",
-                                text: `You are an expert medical prescription OCR system. Extract ALL information from this prescription image into a structured JSON format.
+                                image: { content: base64 },
+                                features: [{ type: "DOCUMENT_TEXT_DETECTION", maxResults: 1 }]
+                            }
+                        ]
+                    })
+                }
+            );
 
-IMPORTANT INSTRUCTIONS:
-- Read handwritten text carefully, use context clues for unclear words
-- Extract doctor name, hospital/clinic name if visible
-- Extract patient name if present (may not always be there)
-- Extract prescription date if visible
-- Extract ALL lab tests mentioned (blood tests, scans, pathology tests, etc.)
-- Extract ALL medications with dosage, frequency, and duration
-- Extract diagnosis or symptoms if mentioned
-- Extract any additional notes or instructions
+            const visionData = await visionRes.json();
+            const rawText = visionData.responses?.[0]?.fullTextAnnotation?.text || "";
 
-Return ONLY a valid JSON object with this exact structure (no markdown, no extra text):
+            if (!rawText || rawText.trim().length === 0) {
+                setRxStructuredData({ rawText: "No text detected in image", parsed: null, error: "parse_failed" });
+                setRxMatched(null);
+                setRxUnmatched(["Could not read prescription. Please select tests manually."]);
+                setRxScanning(false);
+                return;
+            }
 
-{
-  "doctorName": "string or null",
-  "hospitalOrClinic": "string or null",
-  "patientName": "string or null",
-  "date": "string (YYYY-MM-DD format) or null",
-  "suggestedTests": [
-    {
-      "testName": "string",
-      "notes": "string or null"
-    }
-  ],
-  "medications": [
-    {
-      "name": "string",
-      "dosage": "string or null",
-      "frequency": "string or null",
-      "duration": "string or null"
-    }
-  ],
-  "diagnosis": "string or null",
-  "additionalNotes": "string or null"
-}
+            // Step 2: Parse the extracted text using rule-based parsing
+            const extractedData = parsePrescriptionText(rawText);
 
-If a field is not found or unclear, use null. For arrays, return empty array [] if nothing found.`
-                            },
-                        ],
-                    }],
-                }),
-            });
-            const data = await res.json();
-            const text = data?.content?.[0]?.text || "{}";
-
-            // Extract JSON from response (handle potential markdown wrapping)
-            const jsonMatch = text.match(/\{[\s\S]*\}/);
-            const extractedData = JSON.parse(jsonMatch?.[0] || "{}");
-
-            setRxStructuredData(extractedData);
+            // Add raw text to structured data
+            setRxStructuredData({ ...extractedData, rawText });
 
             // Match tests from extracted data
             const suggestedTests = extractedData.suggestedTests || [];
@@ -184,7 +151,8 @@ If a field is not found or unclear, use null. For arrays, return empty array [] 
                 const testName = item.testName || "";
                 const found = tests.find((t) =>
                     t.testName.toLowerCase().includes(testName.toLowerCase()) ||
-                    testName.toLowerCase().includes(t.testName.toLowerCase())
+                    testName.toLowerCase().includes(t.testName.toLowerCase()) ||
+                    t.testCode.toLowerCase() === testName.toLowerCase()
                 );
                 if (found) {
                     matched.push(found);
@@ -199,15 +167,142 @@ If a field is not found or unclear, use null. For arrays, return empty array [] 
             });
 
             const totalExtracted = suggestedTests.length;
-            setRxMatched(`Found ${matched.length} of ${totalExtracted} test${totalExtracted !== 1 ? "s" : ""} from prescription`);
+            if (totalExtracted > 0) {
+                setRxMatched(`Found ${matched.length} of ${totalExtracted} test${totalExtracted !== 1 ? "s" : ""} from prescription`);
+            } else {
+                setRxMatched("No tests found in prescription");
+            }
             setRxUnmatched(unmatched);
         } catch (err) {
             console.error("Prescription scan error:", err);
+            setRxStructuredData({ rawText: "Error scanning prescription", parsed: null, error: "scan_failed" });
             setRxMatched(null);
             setRxUnmatched(["Could not read prescription. Please select tests manually."]);
         } finally {
             setRxScanning(false);
         }
+    };
+
+    // Helper function to parse prescription text (rule-based)
+    const parsePrescriptionText = (rawText: string) => {
+        if (!rawText || rawText.trim().length === 0) {
+            return {
+                doctorName: null,
+                hospitalOrClinic: null,
+                patientName: null,
+                date: null,
+                diagnosis: null,
+                suggestedTests: [],
+                medications: [],
+                additionalNotes: null,
+                confidence: "failed" as const
+            };
+        }
+
+        const upper = rawText.toUpperCase();
+
+        // Known lab test keywords
+        const TEST_KEYWORDS = [
+            'CBC', 'COMPLETE BLOOD COUNT', 'HAEMOGLOBIN', 'HEMOGLOBIN', 'HB',
+            'LFT', 'LIVER FUNCTION', 'KFT', 'KIDNEY FUNCTION', 'RFT', 'RENAL',
+            'BLOOD SUGAR', 'FASTING', 'PPBS', 'HBA1C', 'GLUCOSE',
+            'THYROID', 'TSH', 'T3', 'T4', 'FT3', 'FT4',
+            'LIPID', 'CHOLESTEROL', 'TRIGLYCERIDE', 'HDL', 'LDL',
+            'URINE', 'URINE R/M', 'URINE ROUTINE', 'URINE CULTURE',
+            'CREATININE', 'UREA', 'URIC ACID', 'BUN',
+            'ECG', 'X-RAY', 'XRAY', 'USG', 'ULTRASOUND', 'SONOGRAPHY',
+            'VITAMIN D', 'VITAMIN B12', 'CALCIUM', 'PHOSPHORUS',
+            'SERUM', 'PLASMA', 'ESR', 'CRP', 'WIDAL', 'DENGUE', 'MALARIA',
+            'HIV', 'HBsAg', 'VDRL', 'TPHA', 'CULTURE', 'SENSITIVITY',
+            'PSA', 'CEA', 'AFP', 'FERRITIN', 'IRON', 'TIBC'
+        ];
+
+        // Extract suggested tests
+        const suggestedTests: Array<{ testName: string; notes: null }> = [];
+        const foundKeywords = new Set<string>();
+
+        TEST_KEYWORDS.forEach(keyword => {
+            if (upper.includes(keyword)) {
+                const alreadyAdded = Array.from(foundKeywords).some(existing =>
+                    existing.includes(keyword) || keyword.includes(existing)
+                );
+                if (!alreadyAdded) {
+                    foundKeywords.add(keyword);
+                    suggestedTests.push({
+                        testName: keyword.charAt(0) + keyword.slice(1).toLowerCase(),
+                        notes: null
+                    });
+                }
+            }
+        });
+
+        // Extract doctor name
+        let doctorName: string | null = null;
+        const drMatch = rawText.match(/Dr\.?\s+([A-Z][a-zA-Z\s\.]{2,40})/);
+        if (drMatch) doctorName = 'Dr. ' + drMatch[1].trim();
+
+        // Extract hospital/clinic
+        let hospitalOrClinic: string | null = null;
+        const hospitalPatterns = [
+            /(?:Hospital|Clinic|Centre|Center|Diagnostic|Medical|Healthcare)[:\s]+([A-Z][a-zA-Z\s&]{3,50})/i,
+            /([A-Z][a-zA-Z\s&]{3,50})\s+(?:Hospital|Clinic|Centre|Center|Diagnostic)/i
+        ];
+        for (const pattern of hospitalPatterns) {
+            const match = rawText.match(pattern);
+            if (match) {
+                hospitalOrClinic = match[0].trim();
+                break;
+            }
+        }
+
+        // Extract patient name
+        let patientName: string | null = null;
+        const nameMatch = rawText.match(/(?:Name|Patient|Patient Name)[:\s]+([A-Z][a-zA-Z\s]{2,40})/i);
+        if (nameMatch) patientName = nameMatch[1].trim();
+
+        // Extract date
+        let date: string | null = null;
+        const dateMatch = rawText.match(/\b(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4})\b/);
+        if (dateMatch) date = dateMatch[1];
+
+        // Extract diagnosis
+        let diagnosis: string | null = null;
+        const dxPatterns = [
+            /(?:Dx|Diagnosis)[:\s]+([^\n]{3,80})/i,
+            /(?:C\/O|c\/o)[:\s]+([^\n]{3,80})/i,
+            /(?:K\/C\/O|k\/c\/o)[:\s]+([^\n]{3,80})/i
+        ];
+        for (const pattern of dxPatterns) {
+            const match = rawText.match(pattern);
+            if (match) {
+                diagnosis = match[1].trim();
+                break;
+            }
+        }
+
+        // Confidence scoring
+        let confidence: "high" | "medium" | "low" | "failed" = "low";
+        if (suggestedTests.length > 0 && doctorName) {
+            confidence = "high";
+        } else if (suggestedTests.length > 0 || doctorName) {
+            confidence = "medium";
+        } else if (rawText.length > 20) {
+            confidence = "low";
+        } else {
+            confidence = "failed";
+        }
+
+        return {
+            doctorName,
+            hospitalOrClinic,
+            patientName,
+            date,
+            diagnosis,
+            suggestedTests,
+            medications: [],
+            additionalNotes: null,
+            confidence
+        };
     };
 
     const toggleTest = (t: Test) =>
@@ -397,59 +492,100 @@ If a field is not found or unclear, use null. For arrays, return empty array [] 
                                         </div>
                                     )}
                                     {rxMatched && (
-                                        <p className="text-teal-600 text-xs font-semibold mt-1">{rxMatched}</p>
+                                        <div className="flex items-center justify-between">
+                                            <p className="text-teal-600 text-xs font-semibold">{rxMatched}</p>
+                                            {rxStructuredData?.confidence && (
+                                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${rxStructuredData.confidence === "high" ? "bg-green-100 text-green-700" :
+                                                    rxStructuredData.confidence === "medium" ? "bg-yellow-100 text-yellow-700" :
+                                                        rxStructuredData.confidence === "low" ? "bg-orange-100 text-orange-700" :
+                                                            "bg-red-100 text-red-700"
+                                                    }`}>
+                                                    {rxStructuredData.confidence} confidence
+                                                </span>
+                                            )}
+                                        </div>
                                     )}
                                     {rxUnmatched.length > 0 && (
                                         <p className="text-amber-600 text-xs mt-1">Could not match: {rxUnmatched.join(", ")}</p>
                                     )}
                                     {rxStructuredData && (
                                         <div className="mt-3 pt-3 border-t border-slate-200 space-y-2 text-xs">
-                                            {rxStructuredData.doctorName && (
-                                                <div className="flex gap-2">
-                                                    <span className="text-slate-400 font-medium">Doctor:</span>
-                                                    <span className="text-slate-700">{rxStructuredData.doctorName}</span>
+                                            {rxStructuredData.error === "parse_failed" ? (
+                                                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                                                    <p className="text-red-700 font-semibold mb-2">Could not parse prescription. Raw text shown below:</p>
+                                                    <pre className="text-slate-600 text-[10px] whitespace-pre-wrap font-mono bg-white p-2 rounded border border-red-100 max-h-32 overflow-y-auto">
+                                                        {rxStructuredData.rawText || "No text extracted"}
+                                                    </pre>
                                                 </div>
-                                            )}
-                                            {rxStructuredData.hospitalOrClinic && (
-                                                <div className="flex gap-2">
-                                                    <span className="text-slate-400 font-medium">Hospital:</span>
-                                                    <span className="text-slate-700">{rxStructuredData.hospitalOrClinic}</span>
-                                                </div>
-                                            )}
-                                            {rxStructuredData.date && (
-                                                <div className="flex gap-2">
-                                                    <span className="text-slate-400 font-medium">Date:</span>
-                                                    <span className="text-slate-700">{new Date(rxStructuredData.date).toLocaleDateString("en-IN")}</span>
-                                                </div>
-                                            )}
-                                            {rxStructuredData.diagnosis && (
-                                                <div className="flex gap-2">
-                                                    <span className="text-slate-400 font-medium">Diagnosis:</span>
-                                                    <span className="text-slate-700">{rxStructuredData.diagnosis}</span>
-                                                </div>
-                                            )}
-                                            {rxStructuredData.medications && rxStructuredData.medications.length > 0 && (
-                                                <div>
-                                                    <span className="text-slate-400 font-medium block mb-1">Medications:</span>
-                                                    <div className="space-y-1 pl-2">
-                                                        {rxStructuredData.medications.slice(0, 3).map((med: any, i: number) => (
-                                                            <div key={i} className="text-slate-600">
-                                                                • {med.name}
-                                                                {med.dosage && ` - ${med.dosage}`}
-                                                                {med.frequency && ` (${med.frequency})`}
+                                            ) : (
+                                                <>
+                                                    {rxStructuredData.doctorName && (
+                                                        <div className="flex gap-2">
+                                                            <span className="text-slate-400 font-medium">Doctor:</span>
+                                                            <span className="text-slate-700">{rxStructuredData.doctorName}</span>
+                                                        </div>
+                                                    )}
+                                                    {rxStructuredData.hospitalOrClinic && (
+                                                        <div className="flex gap-2">
+                                                            <span className="text-slate-400 font-medium">Hospital:</span>
+                                                            <span className="text-slate-700">{rxStructuredData.hospitalOrClinic}</span>
+                                                        </div>
+                                                    )}
+                                                    {rxStructuredData.patientName && (
+                                                        <div className="flex gap-2">
+                                                            <span className="text-slate-400 font-medium">Patient:</span>
+                                                            <span className="text-slate-700">{rxStructuredData.patientName}</span>
+                                                        </div>
+                                                    )}
+                                                    {rxStructuredData.date && (
+                                                        <div className="flex gap-2">
+                                                            <span className="text-slate-400 font-medium">Date:</span>
+                                                            <span className="text-slate-700">{new Date(rxStructuredData.date).toLocaleDateString("en-IN")}</span>
+                                                        </div>
+                                                    )}
+                                                    {rxStructuredData.diagnosis && (
+                                                        <div className="flex gap-2">
+                                                            <span className="text-slate-400 font-medium">Diagnosis:</span>
+                                                            <span className="text-slate-700">{rxStructuredData.diagnosis}</span>
+                                                        </div>
+                                                    )}
+                                                    {rxStructuredData.suggestedTests && rxStructuredData.suggestedTests.length > 0 && (
+                                                        <div>
+                                                            <span className="text-slate-400 font-medium block mb-1">Suggested Tests:</span>
+                                                            <div className="flex flex-wrap gap-1">
+                                                                {rxStructuredData.suggestedTests.map((test: any, i: number) => (
+                                                                    <span key={i} className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-teal-100 text-teal-700">
+                                                                        {test.testName}
+                                                                    </span>
+                                                                ))}
                                                             </div>
-                                                        ))}
-                                                        {rxStructuredData.medications.length > 3 && (
-                                                            <div className="text-slate-400">+{rxStructuredData.medications.length - 3} more</div>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            )}
-                                            {rxStructuredData.additionalNotes && (
-                                                <div className="flex gap-2">
-                                                    <span className="text-slate-400 font-medium">Notes:</span>
-                                                    <span className="text-slate-700">{rxStructuredData.additionalNotes}</span>
-                                                </div>
+                                                        </div>
+                                                    )}
+                                                    {rxStructuredData.medications && rxStructuredData.medications.length > 0 && (
+                                                        <div>
+                                                            <span className="text-slate-400 font-medium block mb-1">Medications:</span>
+                                                            <div className="space-y-1 pl-2">
+                                                                {rxStructuredData.medications.slice(0, 3).map((med: any, i: number) => (
+                                                                    <div key={i} className="text-slate-600">
+                                                                        • {med.name}
+                                                                        {med.dosage && ` — ${med.dosage}`}
+                                                                        {med.frequency && ` — ${med.frequency}`}
+                                                                        {med.duration && ` (${med.duration})`}
+                                                                    </div>
+                                                                ))}
+                                                                {rxStructuredData.medications.length > 3 && (
+                                                                    <div className="text-slate-400">+{rxStructuredData.medications.length - 3} more</div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                    {rxStructuredData.additionalNotes && (
+                                                        <div className="flex gap-2">
+                                                            <span className="text-slate-400 font-medium">Notes:</span>
+                                                            <span className="text-slate-700">{rxStructuredData.additionalNotes}</span>
+                                                        </div>
+                                                    )}
+                                                </>
                                             )}
                                         </div>
                                     )}

@@ -53,6 +53,12 @@ export const checkPatientEmail = (email: string) => patientApi.get("/api/patient
 export const registerGooglePatient = (data: { fullName: string; email: string; phone: string; dateOfBirth?: string; gender?: string; bloodGroup?: string; address?: { street?: string; city?: string; state?: string; pincode?: string } }) => patientApi.post("/api/patients/register-google", data);
 export const getStaffByRole = (role: string) => patientApi.get("/api/users", { params: { role } });
 
+// ── Prescriptions ──
+export const createPrescription = (data: { patientId: string; imageUrl: string; rawText?: string; parsed?: any }) => patientApi.post("/api/prescriptions", data);
+export const getPatientPrescriptions = (patientId: string) => patientApi.get(`/api/prescriptions/patient/${patientId}`);
+export const getPrescriptionById = (id: string) => patientApi.get(`/api/prescriptions/${id}`);
+export const deletePrescription = (id: string) => patientApi.delete(`/api/prescriptions/${id}`);
+
 // ── Tests (patient-service) ──
 export const getAllTests = (params?: { page?: number; limit?: number; search?: string; category?: string }) => patientApi.get("/api/tests", { params });
 export const getTestCatalog = () => patientApi.get("/api/tests/catalog");

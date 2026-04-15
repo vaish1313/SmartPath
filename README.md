@@ -73,6 +73,7 @@ REDIS_URL=redis://:your_password@localhost:6379
 JWT_SECRET=your-super-secret-jwt-key
 RAZORPAY_KEY_ID=rzp_test_your_key_id
 RAZORPAY_KEY_SECRET=your_razorpay_secret
+GOOGLE_VISION_API_KEY=your_google_vision_api_key
 ```
 
 ### `apps/web/.env.local`
@@ -82,6 +83,7 @@ NEXTAUTH_SECRET=your_nextauth_secret
 GOOGLE_CLIENT_ID=your_google_client_id
 GOOGLE_CLIENT_SECRET=your_google_client_secret
 NEXT_PUBLIC_RAZORPAY_KEY_ID=rzp_test_your_key_id
+NEXT_PUBLIC_GOOGLE_VISION_API_KEY=your_google_vision_api_key
 PATIENT_SERVICE_URL=http://localhost:3001
 BOOKING_SERVICE_URL=http://localhost:3002
 ```

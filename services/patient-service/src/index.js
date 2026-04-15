@@ -12,6 +12,7 @@ const packageRoutes = require('./routes/package.routes');
 const userRoutes = require('./routes/user.routes');
 const reviewRoutes = require('./routes/review.routes');
 const offerRoutes = require('./routes/offers');
+const prescriptionRoutes = require('./routes/prescriptionRoutes');
 const errorHandler = require('./middleware/error.middleware');
 
 const app = express();
@@ -37,6 +38,7 @@ app.use('/api/packages', packageRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/offers', offerRoutes);
+app.use('/api/prescriptions', prescriptionRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
