@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { getBookingById, updateBookingStatus, assignTechnician, getStaffByRole } from "@/lib/api";
-import { ArrowLeft, Loader2, Calendar, Clock, MapPin, Home, Building2, User, CheckCircle2, Circle } from "lucide-react";
+import { ArrowLeft, Loader2, Calendar, Clock, MapPin, Home, Building2, User, CheckCircle2, Circle, FileText } from "lucide-react";
 import axios from "axios";
 
 interface Booking {
@@ -63,6 +64,9 @@ export default function BookingDetailPage() {
     const [error, setError] = useState("");
     const [technicians, setTechnicians] = useState<{ _id: string; fullName: string; role: string }[]>([]);
     const [updating, setUpdating] = useState(false);
+    const { data: session } = useSession();
+    const [reportLoading, setReportLoading] = useState(false);
+    const [reportToast, setReportToast] = useState<{ type: "success" | "error"; msg: string } | null>(null);
 
     useEffect(() => {
         if (!id) { setError("Invalid booking ID"); setLoading(false); return; }
@@ -107,6 +111,21 @@ export default function BookingDetailPage() {
             setBooking(res.data?.booking ?? null);
         } catch { setError("Failed to assign technician"); }
         finally { setUpdating(false); }
+    };
+
+    const handleGenerateReport = async () => {
+        if (!booking?._id) return;
+        setReportLoading(true);
+        setReportToast(null);
+        try {
+            await axios.post("/api/reports/generate", { bookingId: booking._id });
+            setReportToast({ type: "success", msg: "Report generated successfully" });
+        } catch {
+            setReportToast({ type: "error", msg: "Failed to generate report" });
+        } finally {
+            setReportLoading(false);
+            setTimeout(() => setReportToast(null), 4000);
+        }
     };
 
     if (loading) return (
@@ -293,6 +312,25 @@ export default function BookingDetailPage() {
                 {updating && (
                     <div className="flex items-center gap-2 mt-3 text-teal-600 text-xs">
                         <Loader2 className="w-3.5 h-3.5 animate-spin" /> Updating...
+                    </div>
+                )}
+
+                {/* Generate Report — lab_technician only, sample-collected status */}
+                {(session?.user as { role?: string })?.role === "lab_technician" && status === "sample-collected" && (
+                    <div className="mt-4 pt-4 border-t border-slate-100">
+                        {reportToast && (
+                            <div className={`mb-3 px-4 py-2.5 rounded-xl text-sm font-medium ${reportToast.type === "success" ? "bg-teal-50 text-teal-700 border border-teal-200" : "bg-red-50 text-red-600 border border-red-200"}`}>
+                                {reportToast.msg}
+                            </div>
+                        )}
+                        <button
+                            onClick={handleGenerateReport}
+                            disabled={reportLoading}
+                            className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 disabled:opacity-60 text-white font-bold text-sm px-5 py-2.5 rounded-xl transition-all shadow-sm"
+                        >
+                            {reportLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
+                            {reportLoading ? "Generating..." : "Generate Report"}
+                        </button>
                     </div>
                 )}
             </div>

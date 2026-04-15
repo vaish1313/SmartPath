@@ -75,7 +75,7 @@ export default function PayNowButton({ invoiceId, amount, patientName, patientEm
             key: orderData.keyId,
             amount: orderData.amount,
             currency: orderData.currency,
-            name: "Prathamesh Advanced Diagnostic Center",
+            name: "SmartPath Diagnostics",
             description: `Invoice ${orderData.invoiceNumber}`,
             order_id: orderData.orderId,
             prefill: {
@@ -83,7 +83,7 @@ export default function PayNowButton({ invoiceId, amount, patientName, patientEm
                 email: patientEmail || "",
                 contact: patientPhone || "",
             },
-            theme: { color: "#0ea5e9" },
+            theme: { color: "#1D9E75" },
             handler: async (response: {
                 razorpay_order_id: string;
                 razorpay_payment_id: string;
@@ -123,14 +123,14 @@ export default function PayNowButton({ invoiceId, amount, patientName, patientEm
         <button
             onClick={handlePayNow}
             disabled={loading}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white font-bold text-sm px-5 py-2.5 rounded-xl transition-all shadow-md shadow-blue-200"
+            className="flex items-center gap-2 bg-[#1D9E75] hover:bg-[#17856a] disabled:opacity-60 text-white font-bold text-sm px-5 py-2.5 rounded-xl transition-all shadow-md"
         >
             {loading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
             ) : (
                 <CreditCard className="w-4 h-4" />
             )}
-            {loading ? "Processing..." : `Pay ₹${amount}`}
+            {loading ? "Processing..." : `Pay ₹${amount.toLocaleString("en-IN")}`}
         </button>
     );
 }

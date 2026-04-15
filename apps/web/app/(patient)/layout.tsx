@@ -30,7 +30,7 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
     if (!authed || badRole) return null;
 
     return (
-        <div className="flex min-h-screen bg-slate-50">
+        <div className="flex min-h-screen bg-[#F5F5F3]">
             <Sidebar />
             <div className="flex-1 pb-20 lg:pb-0">{children}</div>
             <MobileNav />

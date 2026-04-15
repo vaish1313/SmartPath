@@ -1,0 +1,2 @@
+# This directory stores generated PDF reports
+# The PDFs themselves are gitignored but the directory structure is preserved

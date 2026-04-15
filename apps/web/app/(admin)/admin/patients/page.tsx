@@ -9,7 +9,7 @@ import { useAuthStore } from "@/store/authStore";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Search, UserPlus, Eye, Pencil, Trash2, Loader2, Users, X, User } from "lucide-react";
+import { Search, UserPlus, Eye, Pencil, Trash2, Loader2, Users, X, User, Phone, Mail, Calendar, MapPin, Droplets, Clock } from "lucide-react";
 import axios from "axios";
 
 const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
@@ -36,6 +36,9 @@ interface Patient {
     email: string;
     gender?: string;
     bloodGroup?: string;
+    dateOfBirth?: string;
+    address?: { street?: string; city?: string; state?: string; pincode?: string };
+    medicalHistory?: { _id: string; condition: string; diagnosedDate?: string; notes?: string }[];
     isActive: boolean;
     createdAt: string;
 }
@@ -61,10 +64,12 @@ export default function AdminPatientsPage() {
     const [deleting, setDeleting] = useState(false);
     const [error, setError] = useState("");
 
-    const [modal, setModal] = useState<"add" | "edit" | null>(null);
+    const [modal, setModal] = useState<"add" | "edit" | "view" | null>(null);
     const [editId, setEditId] = useState<string | null>(null);
+    const [viewId, setViewId] = useState<string | null>(null);
     const [modalLoading, setModalLoading] = useState(false);
     const [apiError, setApiError] = useState("");
+    const [viewPatient, setViewPatient] = useState<Patient | null>(null);
 
     const debouncedSearch = useDebounce(search);
 
@@ -88,6 +93,14 @@ export default function AdminPatientsPage() {
 
     const openAdd = () => { reset({}); setApiError(""); setModal("add"); };
 
+    const openView = (id: string) => {
+        setViewId(id); setApiError(""); setModalLoading(true); setModal("view");
+        getPatientById(id)
+            .then((res) => setViewPatient(res.data.patient))
+            .catch(() => setApiError("Failed to load patient"))
+            .finally(() => setModalLoading(false));
+    };
+
     const openEdit = (id: string) => {
         setEditId(id); setApiError(""); setModalLoading(true); setModal("edit");
         getPatientById(id)
@@ -104,7 +117,20 @@ export default function AdminPatientsPage() {
             .finally(() => setModalLoading(false));
     };
 
-    const closeModal = () => { setModal(null); setEditId(null); reset({}); setApiError(""); };
+    const openEditFromView = () => {
+        if (!viewPatient) return;
+        const p = viewPatient;
+        reset({
+            fullName: p.fullName, phone: p.phone, email: p.email,
+            gender: p.gender, bloodGroup: p.bloodGroup,
+            dateOfBirth: p.dateOfBirth ? p.dateOfBirth.split("T")[0] : "",
+            street: p.address?.street || "", city: p.address?.city || "", pincode: p.address?.pincode || "",
+        });
+        setEditId(p._id);
+        setModal("edit");
+    };
+
+    const closeModal = () => { setModal(null); setEditId(null); setViewId(null); setViewPatient(null); reset({}); setApiError(""); };
 
     const onSubmit = async (data: FormData) => {
         setApiError("");
@@ -164,8 +190,8 @@ export default function AdminPatientsPage() {
 
                 {error && <div className="mb-4 px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-sm">{error}</div>}
 
-                <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-                    <div className="px-5 py-4 border-b border-slate-100">
+                <div className="bg-white/60 backdrop-blur-xl rounded-2xl border border-white/40 shadow-lg overflow-hidden hover:shadow-xl hover:bg-white/70 transition-all">
+                    <div className="px-5 py-4 border-b border-slate-100/60">
                         <div className="relative max-w-sm">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                             <input value={search} onChange={(e) => setSearch(e.target.value)}
@@ -215,7 +241,7 @@ export default function AdminPatientsPage() {
                                             </td>
                                             <td className="px-5 py-3.5">
                                                 <div className="flex items-center gap-2">
-                                                    <Link href={`/admin/patients/${p._id}`} className="p-1.5 rounded-lg text-slate-400 hover:text-teal-600 hover:bg-teal-50 transition-all" title="View"><Eye className="w-4 h-4" /></Link>
+                                                    <button onClick={() => openView(p._id)} className="p-1.5 rounded-lg text-slate-400 hover:text-teal-600 hover:bg-teal-50 transition-all" title="View"><Eye className="w-4 h-4" /></button>
                                                     <button onClick={() => openEdit(p._id)} className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-all" title="Edit"><Pencil className="w-4 h-4" /></button>
                                                     {user?.role === "admin" && (
                                                         <button onClick={() => setDeleteId(p._id)} className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-all" title="Delete"><Trash2 className="w-4 h-4" /></button>
@@ -243,7 +269,7 @@ export default function AdminPatientsPage() {
             </main>
 
             {/* Add / Edit Modal */}
-            {modal && (
+            {(modal === "add" || modal === "edit") && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
                     <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
                         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
@@ -327,6 +353,147 @@ export default function AdminPatientsPage() {
                                     </button>
                                 </div>
                             </form>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* View Patient Modal */}
+            {modal === "view" && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+                        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+                            <div className="flex items-center gap-3">
+                                <div className="w-9 h-9 rounded-xl bg-teal-50 flex items-center justify-center">
+                                    <User className="w-4 h-4 text-teal-600" strokeWidth={1.8} />
+                                </div>
+                                <div>
+                                    <h2 className="text-base font-bold text-slate-800">Patient Details</h2>
+                                    <p className="text-slate-400 text-xs">View patient information</p>
+                                </div>
+                            </div>
+                            <button onClick={closeModal} className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all">
+                                <X className="w-4 h-4" />
+                            </button>
+                        </div>
+
+                        {modalLoading ? (
+                            <div className="flex items-center justify-center py-16"><Loader2 className="w-6 h-6 text-teal-500 animate-spin" /></div>
+                        ) : viewPatient ? (
+                            <div className="px-6 py-5">
+                                {apiError && <div className="mb-4 px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-sm">{apiError}</div>}
+
+                                {/* Patient header */}
+                                <div className="flex items-center gap-4 mb-6 pb-5 border-b border-slate-100">
+                                    <div className="w-16 h-16 rounded-2xl bg-teal-100 flex items-center justify-center text-teal-700 font-bold text-3xl">
+                                        {viewPatient.fullName[0]}
+                                    </div>
+                                    <div className="flex-1">
+                                        <h3 className="text-lg font-bold text-slate-800">{viewPatient.fullName}</h3>
+                                        {viewPatient.patientId && <p className="text-teal-600 text-xs font-mono font-semibold">{viewPatient.patientId}</p>}
+                                        <span className={`inline-block mt-1 text-xs font-semibold px-2.5 py-0.5 rounded-full border ${viewPatient.isActive ? "bg-teal-50 text-teal-700 border-teal-200" : "bg-red-50 text-red-600 border-red-200"}`}>
+                                            {viewPatient.isActive ? "Active" : "Inactive"}
+                                        </span>
+                                    </div>
+                                    <button onClick={openEditFromView}
+                                        className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white font-semibold text-sm px-4 py-2 rounded-xl transition-all shadow-md shadow-teal-200">
+                                        <Pencil className="w-3.5 h-3.5" /> Edit
+                                    </button>
+                                </div>
+
+                                {/* Patient info grid */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                                    <div className="flex items-start gap-3 bg-slate-50 rounded-xl p-4">
+                                        <div className="w-9 h-9 rounded-lg bg-teal-50 flex items-center justify-center flex-shrink-0">
+                                            <Phone className="w-4 h-4 text-teal-500" strokeWidth={1.8} />
+                                        </div>
+                                        <div>
+                                            <p className="text-slate-400 text-xs mb-0.5">Phone</p>
+                                            <p className="text-slate-700 text-sm font-semibold">{viewPatient.phone}</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-start gap-3 bg-slate-50 rounded-xl p-4">
+                                        <div className="w-9 h-9 rounded-lg bg-teal-50 flex items-center justify-center flex-shrink-0">
+                                            <Mail className="w-4 h-4 text-teal-500" strokeWidth={1.8} />
+                                        </div>
+                                        <div>
+                                            <p className="text-slate-400 text-xs mb-0.5">Email</p>
+                                            <p className="text-slate-700 text-sm font-semibold">{viewPatient.email || "—"}</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-start gap-3 bg-slate-50 rounded-xl p-4">
+                                        <div className="w-9 h-9 rounded-lg bg-teal-50 flex items-center justify-center flex-shrink-0">
+                                            <User className="w-4 h-4 text-teal-500" strokeWidth={1.8} />
+                                        </div>
+                                        <div>
+                                            <p className="text-slate-400 text-xs mb-0.5">Gender</p>
+                                            <p className="text-slate-700 text-sm font-semibold capitalize">{viewPatient.gender || "—"}</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-start gap-3 bg-slate-50 rounded-xl p-4">
+                                        <div className="w-9 h-9 rounded-lg bg-teal-50 flex items-center justify-center flex-shrink-0">
+                                            <Calendar className="w-4 h-4 text-teal-500" strokeWidth={1.8} />
+                                        </div>
+                                        <div>
+                                            <p className="text-slate-400 text-xs mb-0.5">Date of Birth</p>
+                                            <p className="text-slate-700 text-sm font-semibold">
+                                                {viewPatient.dateOfBirth ? new Date(viewPatient.dateOfBirth).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" }) : "—"}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-start gap-3 bg-slate-50 rounded-xl p-4">
+                                        <div className="w-9 h-9 rounded-lg bg-teal-50 flex items-center justify-center flex-shrink-0">
+                                            <Droplets className="w-4 h-4 text-teal-500" strokeWidth={1.8} />
+                                        </div>
+                                        <div>
+                                            <p className="text-slate-400 text-xs mb-0.5">Blood Group</p>
+                                            <p className="text-slate-700 text-sm font-semibold">{viewPatient.bloodGroup || "—"}</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-start gap-3 bg-slate-50 rounded-xl p-4">
+                                        <div className="w-9 h-9 rounded-lg bg-teal-50 flex items-center justify-center flex-shrink-0">
+                                            <MapPin className="w-4 h-4 text-teal-500" strokeWidth={1.8} />
+                                        </div>
+                                        <div>
+                                            <p className="text-slate-400 text-xs mb-0.5">Address</p>
+                                            <p className="text-slate-700 text-sm font-semibold">
+                                                {viewPatient.address?.street ? [viewPatient.address.street, viewPatient.address.city, viewPatient.address.pincode].filter(Boolean).join(", ") : "—"}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Medical History */}
+                                <div className="border-t border-slate-100 pt-5">
+                                    <h3 className="text-sm font-bold text-slate-700 mb-4">Medical History</h3>
+                                    {!viewPatient.medicalHistory || viewPatient.medicalHistory.length === 0 ? (
+                                        <p className="text-slate-400 text-sm text-center py-6 bg-slate-50 rounded-xl">No medical history recorded</p>
+                                    ) : (
+                                        <div className="space-y-3">
+                                            {viewPatient.medicalHistory.map((entry: any) => (
+                                                <div key={entry._id} className="flex items-start gap-3 border-l-2 border-teal-200 bg-slate-50 rounded-r-xl pl-4 pr-4 py-3">
+                                                    <div className="flex-1">
+                                                        <p className="text-slate-700 text-sm font-semibold">{entry.condition}</p>
+                                                        {entry.diagnosedDate && (
+                                                            <p className="text-slate-400 text-xs flex items-center gap-1 mt-1">
+                                                                <Clock className="w-3 h-3" />
+                                                                {new Date(entry.diagnosedDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                                                            </p>
+                                                        )}
+                                                        {entry.notes && <p className="text-slate-500 text-xs mt-1">{entry.notes}</p>}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="flex gap-3 pt-5 mt-5 border-t border-slate-100">
+                                    <button onClick={closeModal} className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold text-sm rounded-xl py-2.5 transition-all">Close</button>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="px-6 py-16 text-center text-slate-400">Patient not found</div>
                         )}
                     </div>
                 </div>

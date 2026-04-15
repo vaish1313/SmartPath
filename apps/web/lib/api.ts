@@ -122,3 +122,11 @@ export const verifyPayment = (data: {
 export const getReviews = (limit = 20) => patientApi.get("/api/reviews", { params: { limit } });
 export const createReview = (data: { bookingId: string; rating: number; review: string }) => patientApi.post("/api/reviews", data);
 export const getReviewByBooking = (bookingId: string) => patientApi.get(`/api/reviews/booking/${bookingId}`);
+
+// ── Offers ──
+export const getActiveOffers = () => patientApi.get("/api/offers/active");
+export const getAllOffers = (params?: { page?: number; limit?: number }) => patientApi.get("/api/offers", { params });
+export const getOfferById = (id: string) => patientApi.get(`/api/offers/${id}`);
+export const createOffer = (data: { text: string; icon?: string; color?: string; priority?: number; isActive?: boolean; validFrom?: string; validUntil?: string }) => patientApi.post("/api/offers", data);
+export const updateOffer = (id: string, data: { text?: string; icon?: string; color?: string; priority?: number; isActive?: boolean; validFrom?: string; validUntil?: string }) => patientApi.put(`/api/offers/${id}`, data);
+export const deleteOffer = (id: string) => patientApi.delete(`/api/offers/${id}`);

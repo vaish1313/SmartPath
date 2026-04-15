@@ -13,7 +13,8 @@
     "lint": "turbo run lint",
     "test": "turbo run test",
     "reset-db": "node scripts/reset-db.js",
-    "seed-db": "node scripts/seed-db.js"
+    "seed-db": "node scripts/seed-db.js",
+    "verify": "node scripts/verify-setup.js"
   },
   "devDependencies": {
     "prettier": "^3.0.0",

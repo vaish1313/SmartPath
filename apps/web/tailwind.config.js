@@ -21,6 +21,25 @@ module.exports = {
           "100%": { transform: "translateX(-50%)" },
         },
       },
+      colors: {
+        // Flat design system colors
+        'flat-primary': '#1D9E75',
+        'flat-page-bg': '#F5F5F3',
+        'flat-dark-accent': '#0F6E56',
+      },
+      borderWidth: {
+        // Flat design system border width
+        'flat': '0.5px',
+      },
+      borderRadius: {
+        // Flat design system border radius
+        'flat-sm': '8px',
+        'flat-card': '12px',
+      },
+      spacing: {
+        // Sidebar width
+        'sidebar': '220px',
+      },
     },
   },
   plugins: [],

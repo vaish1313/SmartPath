@@ -73,6 +73,42 @@ export default function ContactPage() {
                         </form>
                     </div>
                 </div>
+
+                {/* Map Section */}
+                <div className="border-t-4 border-teal-100 bg-slate-50 py-14 px-6 lg:px-8">
+                    <div className="max-w-6xl mx-auto">
+                        <div className="text-center mb-8">
+                            <h2 className="text-3xl font-bold text-slate-800 mb-2" style={{ fontFamily: "'Instrument Serif', serif" }}>Find Us</h2>
+                            <p className="text-slate-500">Visit our diagnostic center in Nashik</p>
+                        </div>
+                        <div className="bg-white border-2 border-teal-100 rounded-2xl shadow-lg overflow-hidden" style={{ width: '90%', margin: '0 auto' }}>
+                            <iframe
+                                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3749.4!2d73.78!3d20.00!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMjDCsDAwJzAwLjAiTiA3M8KwNDYnNDguMCJF!5e0!3m2!1sen!2sin!4v1234567890"
+                                width="100%"
+                                height="450"
+                                style={{ border: 0 }}
+                                allowFullScreen
+                                loading="lazy"
+                                referrerPolicy="no-referrer-when-downgrade"
+                                title="Prathamesh Diagnostic Center Location"
+                            />
+                        </div>
+                        <div className="mt-6 text-center">
+                            <p className="text-slate-600 text-sm">
+                                <MapPin className="w-4 h-4 inline-block mr-1 text-teal-600" />
+                                Prathamesh Advanced Diagnostic Center, Near Old CBS, Nashik, Maharashtra 422001
+                            </p>
+                            <a
+                                href="https://www.google.com/maps/search/?api=1&query=Prathamesh+Diagnostic+Center+Nashik+422001"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-block mt-3 text-teal-600 hover:text-teal-700 font-semibold text-sm underline"
+                            >
+                                Open in Google Maps →
+                            </a>
+                        </div>
+                    </div>
+                </div>
             </div>
             <Footer />
         </div>

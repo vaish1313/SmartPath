@@ -172,27 +172,15 @@ export default function Testimonials() {
                         className="text-[clamp(2rem,4vw,3rem)] font-bold mt-5 tracking-tight text-[#1a2332]"
                         style={{ fontFamily: "'Instrument Serif', serif" }}
                     >
-                        Trusted by patients
-                        <br />
+                        Trusted&nbsp;
+
                         <span className="text-teal-600">across Nashik.</span>
                     </h2>
                     <p className="text-slate-500 max-w-md mx-auto text-sm mt-4">
                         Real experiences from real patients — accurate results, fast reports, and care that goes the extra mile.
                     </p>
 
-                    {/* Stats */}
-                    <div className="flex items-center justify-center gap-10 mt-8">
-                        {[
-                            { value: "5000+", label: "Patients served" },
-                            { value: "4.9★", label: "Average rating" },
-                            { value: "24hr", label: "Report delivery" },
-                        ].map(({ value, label }) => (
-                            <div key={label} className="text-center">
-                                <p className="text-2xl font-bold text-slate-800">{value}</p>
-                                <p className="text-slate-400 text-xs mt-0.5">{label}</p>
-                            </div>
-                        ))}
-                    </div>
+
                 </div>
 
                 {/* 2 × 3 grid — 90% width */}

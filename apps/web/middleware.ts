@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 
-const PUBLIC_PATHS = ["/", "/tests", "/about", "/contact", "/login", "/register", "/unauthorized", "/api/auth"];
+const PUBLIC_PATHS = ["/", "/tests", "/about", "/contact", "/login", "/register", "/unauthorized", "/api/auth", "/auth/google/callback"];
 
 const PATIENT_PATHS = ["/portal", "/book-test", "/bookings", "/reports", "/profile", "/dashboard"];
 const ADMIN_PATHS = ["/admin"];

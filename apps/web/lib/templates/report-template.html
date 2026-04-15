@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lab Report — {{reportId}}</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 12px;
+      color: #1a1a1a;
+      background: #fff;
+      width: 210mm;
+      min-height: 297mm;
+    }
+
+    /* ── HEADER ── */
+    .header {
+      background: #1a3a5c;
+      color: #fff;
+      padding: 18px 28px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .header-left .lab-name {
+      font-size: 18px;
+      font-weight: bold;
+      letter-spacing: 0.3px;
+      margin-bottom: 4px;
+    }
+
+    .header-left .lab-sub {
+      font-size: 11px;
+      opacity: 0.85;
+      margin-bottom: 2px;
+    }
+
+    .header-left .lab-accred {
+      font-size: 10px;
+      opacity: 0.7;
+      margin-top: 4px;
+      letter-spacing: 0.5px;
+    }
+
+    .header-right {
+      text-align: right;
+      font-size: 11px;
+      opacity: 0.9;
+      line-height: 1.7;
+    }
+
+    .header-right .report-id {
+      font-size: 13px;
+      font-weight: bold;
+      opacity: 1;
+    }
+
+    /* ── PATIENT INFO ── */
+    .patient-section {
+      background: #f0f4f8;
+      padding: 14px 28px;
+      border-bottom: 2px solid #d0dce8;
+    }
+
+    .patient-section .section-title {
+      font-size: 11px;
+      font-weight: bold;
+      color: #1a3a5c;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 10px;
+    }
+
+    .patient-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px 32px;
+    }
+
+    .patient-row {
+      display: flex;
+      gap: 6px;
+      font-size: 11.5px;
+    }
+
+    .patient-row .label {
+      color: #5a7a9a;
+      min-width: 110px;
+      font-weight: bold;
+    }
+
+    .patient-row .value {
+      color: #1a2332;
+      font-weight: 500;
+    }
+
+    /* ── DIVIDER ── */
+    .divider {
+      height: 1px;
+      background: #d0dce8;
+      margin: 0 28px;
+    }
+
+    /* ── RESULTS TABLE ── */
+    .results-section {
+      padding: 16px 28px;
+    }
+
+    .results-section .section-title {
+      font-size: 11px;
+      font-weight: bold;
+      color: #1a3a5c;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 12px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 11px;
+    }
+
+    thead tr {
+      background: #1a3a5c;
+      color: #fff;
+    }
+
+    thead th {
+      padding: 9px 10px;
+      text-align: left;
+      font-weight: bold;
+      font-size: 10.5px;
+      letter-spacing: 0.4px;
+    }
+
+    tbody tr:nth-child(odd) {
+      background: #ffffff;
+    }
+
+    tbody tr:nth-child(even) {
+      background: #f7f9fb;
+    }
+
+    tbody td {
+      padding: 8px 10px;
+      border-bottom: 1px solid #e8eef4;
+      vertical-align: middle;
+    }
+
+    tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    /* Flag badges */
+    .flag {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    .flag-normal {
+      background: #e6f4ea;
+      color: #1e6e34;
+    }
+
+    .flag-low {
+      background: #e3f0ff;
+      color: #1a5fa8;
+    }
+
+    .flag-high {
+      background: #fff3e0;
+      color: #b45309;
+    }
+
+    .flag-critical {
+      background: #fde8e8;
+      color: #b91c1c;
+      font-weight: 900;
+    }
+
+    /* ── FOOTER ── */
+    .footer {
+      margin-top: 24px;
+      padding: 16px 28px;
+      border-top: 2px solid #d0dce8;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 24px;
+    }
+
+    .footer-left {
+      font-size: 10px;
+      color: #5a7a9a;
+      line-height: 1.6;
+      max-width: 60%;
+    }
+
+    .footer-left .disclaimer {
+      font-style: italic;
+      margin-bottom: 4px;
+    }
+
+    .footer-right {
+      text-align: center;
+      min-width: 160px;
+    }
+
+    .signature-line {
+      border-top: 1.5px solid #1a3a5c;
+      padding-top: 6px;
+      font-size: 11px;
+      font-weight: bold;
+      color: #1a3a5c;
+    }
+
+    .signature-sub {
+      font-size: 10px;
+      color: #5a7a9a;
+      margin-top: 2px;
+    }
+
+    /* ── PAGE NUMBER ── */
+    .page-meta {
+      text-align: center;
+      font-size: 9px;
+      color: #aab8c8;
+      padding: 8px 28px 12px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-left">
+      <div class="lab-name">{{clinic.name}}</div>
+      <div class="lab-sub">{{clinic.address}} &nbsp;|&nbsp; {{clinic.phone}}</div>
+      <div class="lab-sub">{{clinic.email}} &nbsp;|&nbsp; {{clinic.timings}}</div>
+      <div class="lab-accred">{{clinic.accreditation}}</div>
+    </div>
+    <div class="header-right">
+      <div class="report-id">Report ID: {{reportId}}</div>
+      <div>Generated: {{generatedAt}}</div>
+      <div>Status: <strong>{{status}}</strong></div>
+    </div>
+  </div>
+
+  <!-- PATIENT INFO -->
+  <div class="patient-section">
+    <div class="section-title">Patient Information</div>
+    <div class="patient-grid">
+      <div class="patient-row">
+        <span class="label">Patient Name</span>
+        <span class="value">{{patientName}}</span>
+      </div>
+      <div class="patient-row">
+        <span class="label">Report Date</span>
+        <span class="value">{{reportDate}}</span>
+      </div>
+      <div class="patient-row">
+        <span class="label">Age / Gender</span>
+        <span class="value">{{age}} yrs / {{gender}}</span>
+      </div>
+      <div class="patient-row">
+        <span class="label">Sample Collected</span>
+        <span class="value">{{sampleDate}}</span>
+      </div>
+      <div class="patient-row">
+        <span class="label">Patient ID</span>
+        <span class="value">{{patientId}}</span>
+      </div>
+      <div class="patient-row">
+        <span class="label">Referred By</span>
+        <span class="value">Dr. {{doctorName}}</span>
+      </div>
+      <div class="patient-row">
+        <span class="label">Booking ID</span>
+        <span class="value">{{bookingId}}</span>
+      </div>
+      <div class="patient-row">
+        <span class="label">Phone</span>
+        <span class="value">{{phone}}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- TEST RESULTS -->
+  <div class="results-section">
+    <div class="section-title">Test Results</div>
+    <table>
+      <thead>
+        <tr>
+          <th style="width:28%">Test Name</th>
+          <th style="width:14%">Result</th>
+          <th style="width:10%">Unit</th>
+          <th style="width:22%">Reference Range</th>
+          <th style="width:10%">Flag</th>
+          <th style="width:16%">Method</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each tests}}
+        <tr>
+          <td><strong>{{testName}}</strong>{{#if testCode}}<br /><span
+              style="color:#8a9ab0;font-size:9.5px">{{testCode}}</span>{{/if}}</td>
+          <td><strong>{{value}}</strong></td>
+          <td>{{unit}}</td>
+          <td>{{referenceRange}}</td>
+          <td>
+            {{#if (eq flag "normal")}}
+            <span class="flag flag-normal">Normal</span>
+            {{/if}}
+            {{#if (eq flag "low")}}
+            <span class="flag flag-low">Low</span>
+            {{/if}}
+            {{#if (eq flag "high")}}
+            <span class="flag flag-high">High</span>
+            {{/if}}
+            {{#if (eq flag "critical")}}
+            <span class="flag flag-critical">Critical</span>
+            {{/if}}
+          </td>
+          <td style="color:#5a7a9a">{{method}}</td>
+        </tr>
+        {{/each}}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <div class="footer-left">
+      <div class="disclaimer">{{clinic.disclaimer}}</div>
+      <div>{{clinic.name}} &nbsp;·&nbsp; {{clinic.address}}</div>
+      <div>{{clinic.phone}} &nbsp;·&nbsp; {{clinic.email}} &nbsp;·&nbsp; {{clinic.timings}}</div>
+    </div>
+    <div class="footer-right">
+      <div style="height:40px"></div>
+      <div class="signature-line">{{doctorName}}</div>
+      <div class="signature-sub">{{doctorQualification}}</div>
+    </div>
+  </div>
+
+  <div class="page-meta">{{clinic.name}} &nbsp;·&nbsp; {{clinic.address}} &nbsp;·&nbsp; NABL Accredited</div>
+
+</body>
+
+</html>

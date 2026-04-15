@@ -16,7 +16,7 @@ export default function ConfirmDialog({ open, title, description, confirmLabel =
     if (!open) return null;
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm">
-            <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6">
+            <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/60 w-full max-w-sm p-6">
                 <h3 className="text-slate-800 font-bold text-lg mb-2">{title}</h3>
                 <p className="text-slate-500 text-sm mb-6">{description}</p>
                 <div className="flex gap-3">

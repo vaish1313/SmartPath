@@ -14,8 +14,8 @@ export default function BookingConfirm({ tests, date, slot, collectionType }: Pr
 
     return (
         <div className="space-y-4">
-            <div className="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden">
-                <div className="px-5 py-3.5 bg-slate-50 border-b border-slate-100">
+            <div className="bg-white/60 backdrop-blur-xl border border-white/40 rounded-2xl shadow-lg overflow-hidden hover:shadow-xl hover:bg-white/70 transition-all">
+                <div className="px-5 py-3.5 bg-slate-50/50 backdrop-blur-sm border-b border-slate-100/60">
                     <p className="text-slate-700 font-semibold text-sm">Booking Summary</p>
                 </div>
                 <div className="p-5 space-y-4">

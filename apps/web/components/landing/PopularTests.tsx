@@ -65,12 +65,12 @@ export default function PopularTests() {
                     {tests.map(({ name, price, time, tag }) => (
                         <div
                             key={name}
-                            className="group flex items-center justify-between bg-white border border-slate-100 rounded-2xl px-5 py-4 cursor-pointer shadow-sm"
+                            className="group flex items-center justify-between bg-white/60 backdrop-blur-xl border border-white/40 rounded-2xl px-5 py-4 cursor-pointer shadow-lg hover:shadow-xl hover:bg-white/70"
                             style={{ transition: "transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease" }}
                             onMouseEnter={(e) => {
                                 const el = e.currentTarget as HTMLDivElement;
                                 el.style.transform = "translateY(-3px)";
-                                el.style.boxShadow = "0 8px 24px rgba(0,0,0,0.08)";
+                                el.style.boxShadow = "0 12px 32px rgba(0,0,0,0.12)";
                                 el.style.borderLeft = "3px solid #0d9488";
                             }}
                             onMouseLeave={(e) => {

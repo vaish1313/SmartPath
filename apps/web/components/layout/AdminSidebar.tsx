@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { FlaskConical, LayoutDashboard, Users, CalendarCheck, FlaskRound, FileText, CreditCard, LogOut, Microscope, UserCog, Package } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { LayoutDashboard, Users, CalendarCheck, FlaskRound, FileText, CreditCard, Microscope, UserCog, Package, LogOut, Tag, Star } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 
 const nav = [
@@ -11,46 +11,55 @@ const nav = [
     { href: "/admin/bookings", icon: CalendarCheck, label: "Bookings" },
     { href: "/admin/tests", icon: FlaskRound, label: "Tests" },
     { href: "/admin/packages", icon: Package, label: "Packages" },
+    { href: "/admin/offers", icon: Tag, label: "Offers" },
     { href: "/admin/lab", icon: Microscope, label: "Lab" },
     { href: "/admin/reports", icon: FileText, label: "Reports" },
     { href: "/admin/billing", icon: CreditCard, label: "Billing" },
+    { href: "/admin/reviews", icon: Star, label: "Reviews" },
 ];
 
 // Only shown to admin role
 const adminOnlyNav = [
-    { href: "/dashboard/admin/staff", icon: UserCog, label: "Staff Management" },
+    { href: "/admin/staff", icon: UserCog, label: "Staff Management" },
 ];
 
 export default function AdminSidebar() {
     const pathname = usePathname();
+    const router = useRouter();
     const logout = useAuthStore((s) => s.logout);
     const user = useAuthStore((s) => s.user);
 
+    const handleLogout = () => {
+        logout();
+        router.push("/login");
+    };
+
     return (
-        <aside className="hidden lg:flex flex-col w-64 min-h-screen bg-white border-r border-slate-100 shadow-sm">
+        <aside className="hidden lg:flex flex-col w-[220px] min-h-screen bg-white" style={{ borderRight: "0.5px solid rgba(0,0,0,0.1)" }}>
             {/* Logo */}
-            <div className="flex items-center gap-2.5 px-6 h-16 border-b border-slate-100">
-                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-teal-500 to-cyan-500 flex items-center justify-center shadow-md">
-                    <FlaskConical className="w-4 h-4 text-white" strokeWidth={1.8} />
-                </div>
+            <div className="flex items-center gap-2.5 px-5 h-16">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="#1D9E75" />
+                    <path d="M2 17L12 22L22 17V12L12 17L2 12V17Z" fill="#1D9E75" opacity="0.6" />
+                </svg>
                 <div>
-                    <p className="text-slate-800 font-bold text-sm leading-tight">SmartPath</p>
-                    <p className="text-teal-600 text-[10px] font-semibold uppercase tracking-wider">Admin Panel</p>
+                    <p className="text-slate-800 font-semibold text-sm leading-tight">SmartPath</p>
+                    <p className="text-[#1D9E75] text-[10px] font-medium uppercase tracking-wider">Admin</p>
                 </div>
             </div>
 
             {/* Nav */}
-            <nav className="flex-1 px-3 py-5 space-y-1">
+            <nav className="flex-1 px-3 py-5 space-y-0.5">
                 {nav.map(({ href, icon: Icon, label }) => {
                     const active = pathname === href || (href !== "/admin" && pathname.startsWith(href));
                     return (
                         <Link
                             key={href}
                             href={href}
-                            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${active ? "bg-teal-50 text-teal-700 shadow-sm" : "text-slate-500 hover:bg-slate-50 hover:text-slate-700"
+                            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${active ? "bg-[#E1F5EE] text-[#1D9E75]" : "text-slate-600 hover:bg-slate-50"
                                 }`}
                         >
-                            <Icon className={`w-4 h-4 ${active ? "text-teal-600" : "text-slate-400"}`} strokeWidth={1.8} />
+                            <Icon className="w-[18px] h-[18px]" strokeWidth={2} />
                             {label}
                         </Link>
                     );
@@ -60,7 +69,7 @@ export default function AdminSidebar() {
                 {user?.role === "admin" && (
                     <>
                         <div className="pt-3 pb-1 px-3">
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Admin Only</p>
+                            <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest">Admin Only</p>
                         </div>
                         {adminOnlyNav.map(({ href, icon: Icon, label }) => {
                             const active = pathname.startsWith(href);
@@ -68,9 +77,9 @@ export default function AdminSidebar() {
                                 <Link
                                     key={href}
                                     href={href}
-                                    className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${active ? "bg-teal-50 text-teal-700 shadow-sm" : "text-slate-500 hover:bg-slate-50 hover:text-slate-700"}`}
+                                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${active ? "bg-[#E1F5EE] text-[#1D9E75]" : "text-slate-600 hover:bg-slate-50"}`}
                                 >
-                                    <Icon className={`w-4 h-4 ${active ? "text-teal-600" : "text-slate-400"}`} strokeWidth={1.8} />
+                                    <Icon className="w-[18px] h-[18px]" strokeWidth={2} />
                                     {label}
                                 </Link>
                             );
@@ -79,14 +88,14 @@ export default function AdminSidebar() {
                 )}
             </nav>
 
-            {/* Logout */}
-            <div className="px-3 pb-5">
+            {/* Logout Button */}
+            <div className="px-3 pb-5 pt-3" style={{ borderTop: "0.5px solid rgba(0,0,0,0.1)" }}>
                 <button
-                    onClick={logout}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-500 hover:bg-red-50 hover:text-red-600 transition-all"
+                    onClick={handleLogout}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-red-50 hover:text-red-600 transition-colors"
                 >
-                    <LogOut className="w-4 h-4" strokeWidth={1.8} />
-                    Sign out
+                    <LogOut className="w-[18px] h-[18px]" strokeWidth={2} />
+                    Logout
                 </button>
             </div>
         </aside>

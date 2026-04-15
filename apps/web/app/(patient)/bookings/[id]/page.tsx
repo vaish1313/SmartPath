@@ -13,6 +13,7 @@ interface Booking {
     bookingId: string;
     patientName: string;
     patientPhone: string;
+    patientEmail?: string;
     tests: { testName: string; testCode: string; price: number }[];
     totalAmount: number;
     discountAmount: number;
@@ -44,6 +45,7 @@ export default function BookingDetailPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [invoice, setInvoice] = useState<{ _id: string; paymentStatus: string; balanceAmount: number } | null>(null);
+    const [invoiceLoading, setInvoiceLoading] = useState(true);
 
     useEffect(() => {
         if (!id) return;
@@ -55,10 +57,18 @@ export default function BookingDetailPage() {
             })
             .finally(() => setLoading(false));
 
-        // Fetch invoice for this booking (non-critical)
+        // Fetch invoice for this booking
+        setInvoiceLoading(true);
         getInvoiceByBooking(id)
-            .then((res) => setInvoice(res.data?.invoice ?? null))
-            .catch(() => { /* invoice may not exist yet */ });
+            .then((res) => {
+                console.log("Invoice response:", res.data);
+                setInvoice(res.data?.invoice ?? null);
+            })
+            .catch((err) => {
+                console.log("Invoice fetch error:", err);
+                setInvoice(null);
+            })
+            .finally(() => setInvoiceLoading(false));
     }, [id]);
 
     if (loading) return (
@@ -111,6 +121,63 @@ export default function BookingDetailPage() {
                     </button>
                 )}
             </div>
+
+            {/* Payment Section - Prominent placement */}
+            {invoiceLoading ? (
+                <div className="bg-white border border-slate-100 rounded-2xl p-5 mb-4 shadow-sm">
+                    <div className="flex items-center gap-2 text-slate-400">
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span className="text-sm">Checking payment status...</span>
+                    </div>
+                </div>
+            ) : invoice ? (
+                invoice.paymentStatus !== "paid" ? (
+                    <div className="bg-gradient-to-r from-red-50 to-orange-50 border-2 border-red-200 rounded-2xl p-5 mb-4 shadow-md">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-red-700 font-bold text-base mb-1">⚠️ Payment Required</p>
+                                <p className="text-slate-600 text-sm mb-1">
+                                    Invoice: <span className="font-mono font-semibold">#{invoice._id.slice(-8)}</span>
+                                </p>
+                                <p className="text-slate-500 text-xs">
+                                    Balance due: <span className="text-red-600 font-bold text-lg">₹{invoice.balanceAmount.toLocaleString("en-IN")}</span>
+                                </p>
+                            </div>
+                            <PayNowButton
+                                invoiceId={invoice._id}
+                                amount={invoice.balanceAmount}
+                                patientName={booking.patientName}
+                                patientEmail={booking.patientEmail}
+                                patientPhone={booking.patientPhone}
+                            />
+                        </div>
+                    </div>
+                ) : (
+                    <div className="bg-gradient-to-r from-green-50 to-teal-50 border border-green-200 rounded-2xl p-4 mb-4 shadow-sm">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
+                                <CheckCircle2 className="w-5 h-5 text-green-600" />
+                            </div>
+                            <div>
+                                <p className="text-green-700 font-semibold text-sm">Payment Completed</p>
+                                <p className="text-slate-500 text-xs">Invoice #{invoice._id.slice(-8)} · ₹{invoice.balanceAmount.toLocaleString("en-IN")} paid</p>
+                            </div>
+                        </div>
+                    </div>
+                )
+            ) : (
+                <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-4 shadow-sm">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
+                            <span className="text-amber-600 text-lg">ℹ️</span>
+                        </div>
+                        <div>
+                            <p className="text-amber-700 font-semibold text-sm">Invoice Pending</p>
+                            <p className="text-slate-500 text-xs">Invoice will be generated after sample collection</p>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Timeline */}
             <div className="bg-white border border-slate-100 rounded-2xl p-5 mb-4 shadow-sm">
@@ -226,22 +293,6 @@ export default function BookingDetailPage() {
                     </div>
                 </div>
             </div>
-
-            {/* Pay Now — show if invoice exists and is unpaid */}
-            {invoice && invoice.paymentStatus !== "paid" && (
-                <div className="bg-white border border-slate-100 rounded-2xl p-5 mb-4 shadow-sm flex items-center justify-between">
-                    <div>
-                        <p className="text-slate-700 font-semibold text-sm">Outstanding Payment</p>
-                        <p className="text-slate-400 text-xs mt-0.5">Balance due: <span className="text-red-500 font-bold">₹{invoice.balanceAmount}</span></p>
-                    </div>
-                    <PayNowButton
-                        invoiceId={invoice._id}
-                        amount={invoice.balanceAmount}
-                        patientName={booking.patientName}
-                        patientPhone={booking.patientPhone}
-                    />
-                </div>
-            )}
 
             {/* Help */}
             <div className="bg-teal-50 border border-teal-200 rounded-2xl p-4 text-center">

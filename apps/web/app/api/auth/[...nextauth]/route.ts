@@ -22,7 +22,9 @@ const handler = NextAuth({
       return session
     },
     async redirect({ url, baseUrl }) {
-      return `${baseUrl}/portal`
+      // Redirect to our custom callback handler instead of directly to /portal
+      // This allows proper token exchange and authentication setup
+      return `${baseUrl}/auth/google/callback`
     },
   },
   pages: {

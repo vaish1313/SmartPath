@@ -22,7 +22,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     if (!isAuthenticated || role === "patient") return null;
 
     return (
-        <div className="flex min-h-screen bg-slate-50">
+        <div className="flex min-h-screen bg-[#F5F5F3]">
             <AdminSidebar />
             <div className="flex-1">{children}</div>
         </div>
