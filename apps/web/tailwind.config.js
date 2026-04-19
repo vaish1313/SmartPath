@@ -40,6 +40,17 @@ module.exports = {
         // Sidebar width
         'sidebar': '220px',
       },
+      // Premium glassmorphism effects
+      backdropBlur: {
+        'xs': '2px',
+      },
+      boxShadow: {
+        'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.15)',
+        'glass-lg': '0 12px 48px 0 rgba(31, 38, 135, 0.2)',
+        'glass-xl': '0 20px 60px 0 rgba(31, 38, 135, 0.25)',
+        'premium': '0 10px 40px -10px rgba(20, 215, 180, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1)',
+        'premium-hover': '0 20px 60px -10px rgba(20, 215, 180, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.2)',
+      },
     },
   },
   plugins: [],

@@ -9,6 +9,34 @@
   }
 }
 
+@layer components {
+  /* Premium Glassmorphism Card Styles */
+  .glass-card {
+    @apply bg-white/80 backdrop-blur-md border border-white/40 shadow-glass;
+  }
+  
+  .glass-card-hover {
+    @apply glass-card hover:shadow-glass-lg hover:bg-white/90 transition-all duration-300;
+  }
+  
+  .glass-premium {
+    @apply bg-gradient-to-br from-white/90 to-white/70 backdrop-blur-xl border border-white/50 shadow-premium;
+  }
+  
+  .glass-premium-hover {
+    @apply glass-premium hover:shadow-premium-hover hover:scale-[1.02] transition-all duration-300;
+  }
+  
+  /* Luxury gradient overlays */
+  .luxury-gradient {
+    @apply bg-gradient-to-br from-teal-50/50 via-white to-cyan-50/30;
+  }
+  
+  .luxury-border {
+    @apply border border-gradient-to-r from-teal-200/50 via-white to-cyan-200/50;
+  }
+}
+
 @keyframes marquee {
   from { transform: translateX(0); }
   to { transform: translateX(-33.33%); }

@@ -82,13 +82,13 @@ function HealthActivityChart({ data }: { data: { month: string; tests: number }[
     const total = data.reduce((s, d) => s + d.tests, 0);
 
     return (
-        <div className="bg-white rounded-lg p-4 w-full flex flex-col justify-between" style={{ border: "0.5px solid rgba(0,0,0,0.1)", height: '100%' }}>
+        <div className="glass-premium-hover rounded-2xl p-4 w-full flex flex-col justify-between" style={{ height: '100%' }}>
             <div className="flex items-start justify-between mb-3">
                 <div>
                     <h3 className="text-slate-800 font-semibold text-base">Health activity</h3>
                     <p className="text-slate-500 text-sm mt-0.5">{total} tests over 6 months</p>
                 </div>
-                <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-[#E1F5EE] text-[#1D9E75]">
+                <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-teal-50 to-emerald-50 text-[#1D9E75] border border-teal-200/50 shadow-sm">
                     Active
                 </span>
             </div>
@@ -130,9 +130,9 @@ function StatCard({ label, value, sub, dotColor }: {
     label: string; value: number; sub: string; dotColor: string;
 }) {
     return (
-        <div className="bg-white rounded-lg p-4" style={{ border: "0.5px solid rgba(0,0,0,0.1)" }}>
+        <div className="glass-premium-hover rounded-2xl p-4">
             <div className="flex items-center gap-2 mb-2.5">
-                <div className={`w-2 h-2 rounded-full ${dotColor}`} />
+                <div className={`w-2 h-2 rounded-full ${dotColor} shadow-sm`} />
                 <span className="text-slate-600 text-sm font-medium">{label}</span>
             </div>
             <p className="text-2xl font-bold text-slate-800 mb-0.5">{value}</p>
@@ -280,7 +280,7 @@ export default function DashboardPage() {
 
             {/* Personal Info Card */}
             {profile && (
-                <div className="bg-white rounded-lg p-5 mb-5" style={{ border: "0.5px solid rgba(0,0,0,0.1)" }}>
+                <div className="glass-premium rounded-2xl p-5 mb-5 hover:shadow-premium-hover transition-all duration-300">
                     <div className="flex items-center justify-between mb-4">
                         <h3 className="text-slate-800 font-semibold text-base">Personal Information</h3>
                         <Link href="/profile" className="text-[#1D9E75] text-sm font-medium hover:underline">
@@ -326,7 +326,7 @@ export default function DashboardPage() {
 
             {/* Medical History */}
             {profile?.medicalHistory && profile.medicalHistory.length > 0 && (
-                <div className="bg-white rounded-lg p-5 mb-5" style={{ border: "0.5px solid rgba(0,0,0,0.1)" }}>
+                <div className="glass-premium rounded-2xl p-5 mb-5 hover:shadow-premium-hover transition-all duration-300">
                     <div className="flex items-center gap-2 mb-4">
                         <AlertCircle className="w-5 h-5 text-amber-500" />
                         <h3 className="text-slate-800 font-semibold text-base">Medical History</h3>
@@ -434,8 +434,8 @@ export default function DashboardPage() {
                     </div>
                 </button>
 
-                <Link href="/book-test" className="bg-white hover:bg-slate-50 rounded-lg p-5 flex flex-col items-center gap-2.5 transition-colors" style={{ border: "0.5px solid rgba(0,0,0,0.1)" }}>
-                    <div className="w-11 h-11 rounded-lg bg-[#E1F5EE] flex items-center justify-center">
+                <Link href="/book-test" className="glass-premium-hover rounded-2xl p-5 flex flex-col items-center gap-2.5">
+                    <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-teal-50 to-emerald-50 flex items-center justify-center shadow-sm border border-teal-100">
                         <FlaskConical className="w-5 h-5 text-[#1D9E75]" strokeWidth={2} />
                     </div>
                     <div className="text-center">
@@ -444,8 +444,8 @@ export default function DashboardPage() {
                     </div>
                 </Link>
 
-                <Link href="/bookings" className="bg-white hover:bg-slate-50 rounded-lg p-5 flex flex-col items-center gap-2.5 transition-colors" style={{ border: "0.5px solid rgba(0,0,0,0.1)" }}>
-                    <div className="w-11 h-11 rounded-lg bg-[#E6F1FB] flex items-center justify-center">
+                <Link href="/bookings" className="glass-premium-hover rounded-2xl p-5 flex flex-col items-center gap-2.5">
+                    <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-blue-50 to-cyan-50 flex items-center justify-center shadow-sm border border-blue-100">
                         <CalendarCheck className="w-5 h-5 text-[#378ADD]" strokeWidth={2} />
                     </div>
                     <div className="text-center">
@@ -454,8 +454,8 @@ export default function DashboardPage() {
                     </div>
                 </Link>
 
-                <Link href="/reports" className="bg-white hover:bg-slate-50 rounded-lg p-5 flex flex-col items-center gap-2.5 transition-colors" style={{ border: "0.5px solid rgba(0,0,0,0.1)" }}>
-                    <div className="w-11 h-11 rounded-lg bg-[#EEEDFE] flex items-center justify-center">
+                <Link href="/reports" className="glass-premium-hover rounded-2xl p-5 flex flex-col items-center gap-2.5">
+                    <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-purple-50 to-indigo-50 flex items-center justify-center shadow-sm border border-purple-100">
                         <FileText className="w-5 h-5 text-[#534AB7]" strokeWidth={2} />
                     </div>
                     <div className="text-center">
@@ -466,7 +466,7 @@ export default function DashboardPage() {
             </div>
 
             {/* Recent Bookings */}
-            <div className="bg-white rounded-lg p-5" style={{ border: "0.5px solid rgba(0,0,0,0.1)" }}>
+            <div className="glass-premium rounded-2xl p-5 hover:shadow-premium-hover transition-all duration-300">
                 <div className="flex items-center justify-between mb-4">
                     <h3 className="text-slate-800 font-semibold text-base">Recent bookings</h3>
                     <Link href="/bookings" className="text-[#1D9E75] text-sm font-medium flex items-center gap-1 hover:gap-2 transition-all">
