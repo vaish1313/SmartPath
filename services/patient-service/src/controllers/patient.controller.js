@@ -1,27 +1,93 @@
 const Patient = require('../models/Patient');
 const redis = require('../config/redis');
+const mongoose = require('mongoose');
 
 /* ── Own profile (patient) ── */
 const getProfile = async (req, res) => {
-  const patient = await Patient.findById(req.user.id).select('-password');
-  if (!patient) return res.status(404).json({ success: false, message: 'Patient not found' });
-  res.status(200).json({ success: true, patient });
+  try {
+    // Validate ObjectId format
+    if (!req.user || !req.user.id) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'User ID not found in token' 
+      });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(req.user.id)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Invalid user ID format' 
+      });
+    }
+
+    const patient = await Patient.findById(req.user.id).select('-password');
+    
+    if (!patient) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Patient not found. Please login again.' 
+      });
+    }
+
+    res.status(200).json({ success: true, patient });
+  } catch (error) {
+    console.error('Error in getProfile:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Server error while fetching profile',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
 };
 
 const updateProfile = async (req, res) => {
-  const { fullName, phone, dateOfBirth, gender, address } = req.body;
-  const updateData = {};
-  if (fullName) updateData.fullName = fullName;
-  if (phone) updateData.phone = phone;
-  if (dateOfBirth) updateData.dateOfBirth = new Date(dateOfBirth);
-  if (gender) updateData.gender = gender;
-  if (address) updateData.address = address;
+  try {
+    // Validate ObjectId format
+    if (!req.user || !req.user.id) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'User ID not found in token' 
+      });
+    }
 
-  const patient = await Patient.findByIdAndUpdate(req.user.id, updateData, { new: true, runValidators: true }).select('-password');
-  if (!patient) return res.status(404).json({ success: false, message: 'Patient not found' });
+    if (!mongoose.Types.ObjectId.isValid(req.user.id)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Invalid user ID format' 
+      });
+    }
 
-  await redis.del(`patient:${req.user.id}`);
-  res.status(200).json({ success: true, patient });
+    const { fullName, phone, dateOfBirth, gender, address } = req.body;
+    const updateData = {};
+    if (fullName) updateData.fullName = fullName;
+    if (phone) updateData.phone = phone;
+    if (dateOfBirth) updateData.dateOfBirth = new Date(dateOfBirth);
+    if (gender) updateData.gender = gender;
+    if (address) updateData.address = address;
+
+    const patient = await Patient.findByIdAndUpdate(
+      req.user.id, 
+      updateData, 
+      { new: true, runValidators: true }
+    ).select('-password');
+    
+    if (!patient) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Patient not found' 
+      });
+    }
+
+    await redis.del(`patient:${req.user.id}`);
+    res.status(200).json({ success: true, patient });
+  } catch (error) {
+    console.error('Error in updateProfile:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Server error while updating profile',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
 };
 
 /* ── Staff: create patient ── */
