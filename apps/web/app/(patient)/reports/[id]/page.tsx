@@ -56,7 +56,7 @@ export default function PatientReportDetailPage() {
                     </div>
                 </div>
                 {result.approvalStatus === "approved" && result.reportUrl && (
-                    <a href={`http://localhost:3002${result.reportUrl}`} target="_blank" rel="noreferrer"
+                    <a href={`https://smartpath-5wup.onrender.com${result.reportUrl}`} target="_blank" rel="noreferrer"
                         className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white font-bold text-sm px-4 py-2.5 rounded-xl transition-all shadow-md shadow-teal-200">
                         <Download className="w-4 h-4" /> Download PDF
                     </a>

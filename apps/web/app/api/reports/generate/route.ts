@@ -10,8 +10,8 @@ import { CLINIC_CONFIG, getPathologist } from "@/lib/config/clinic.config";
 // Register Handlebars helper
 Handlebars.registerHelper("eq", (a, b) => a === b);
 
-const PATIENT_SERVICE = process.env.PATIENT_SERVICE_URL || "http://localhost:3001";
-const BOOKING_SERVICE = process.env.BOOKING_SERVICE_URL || "http://localhost:3002";
+const PATIENT_SERVICE = process.env.PATIENT_SERVICE_URL || "https://patient-service-kfu5.onrender.com";
+const BOOKING_SERVICE = process.env.BOOKING_SERVICE_URL || "https://smartpath-5wup.onrender.com";
 const GENERATED_DIR = path.join(process.cwd(), "public", "generated");
 
 // Ensure generated directory exists

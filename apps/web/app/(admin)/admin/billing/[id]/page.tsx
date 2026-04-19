@@ -225,7 +225,7 @@ export default function InvoiceDetailPage() {
                     </button>
                 )}
                 {invoice.pdfUrl && (
-                    <a href={`http://localhost:3002${invoice.pdfUrl}`} target="_blank" rel="noreferrer"
+                    <a href={`https://smartpath-5wup.onrender.com${invoice.pdfUrl}`} target="_blank" rel="noreferrer"
                         className="flex items-center gap-2 bg-slate-700 hover:bg-slate-800 text-white font-semibold text-sm px-4 py-2.5 rounded-xl transition-all">
                         <Download className="w-4 h-4" /> Download PDF
                     </a>

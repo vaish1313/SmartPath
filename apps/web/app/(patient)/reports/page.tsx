@@ -72,7 +72,7 @@ export default function ReportsPage() {
                                     <Eye className="w-3.5 h-3.5" /> View
                                 </Link>
                                 {r.approvalStatus === "approved" && r.reportUrl && (
-                                    <a href={`http://localhost:3002${r.reportUrl}`} target="_blank" rel="noreferrer"
+                                    <a href={`https://smartpath-5wup.onrender.com${r.reportUrl}`} target="_blank" rel="noreferrer"
                                         className="flex items-center gap-1.5 text-xs font-semibold text-white bg-teal-600 hover:bg-teal-700 px-3 py-2 rounded-xl transition-all shadow-sm">
                                         <Download className="w-3.5 h-3.5" /> Download
                                     </a>

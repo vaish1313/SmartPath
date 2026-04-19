@@ -78,14 +78,14 @@ GOOGLE_VISION_API_KEY=your_google_vision_api_key
 
 ### `apps/web/.env.local`
 ```env
-NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_URL=https://www.smart-path.co.in
 NEXTAUTH_SECRET=your_nextauth_secret
 GOOGLE_CLIENT_ID=your_google_client_id
 GOOGLE_CLIENT_SECRET=your_google_client_secret
 NEXT_PUBLIC_RAZORPAY_KEY_ID=rzp_test_your_key_id
 NEXT_PUBLIC_GOOGLE_VISION_API_KEY=your_google_vision_api_key
-PATIENT_SERVICE_URL=http://localhost:3001
-BOOKING_SERVICE_URL=http://localhost:3002
+PATIENT_SERVICE_URL=https://patient-service-kfu5.onrender.com
+BOOKING_SERVICE_URL=https://smartpath-5wup.onrender.com
 ```
 
 ---

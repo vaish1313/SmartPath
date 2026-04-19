@@ -127,7 +127,7 @@ export default function AdminReportsPage() {
                                                 {approved && (
                                                     r.pdfUrl ? (
                                                         <a
-                                                            href={`http://localhost:3002${r.pdfUrl}`}
+                                                            href={`https://smartpath-5wup.onrender.com${r.pdfUrl}`}
                                                             target="_blank"
                                                             rel="noreferrer"
                                                             className="flex items-center gap-1.5 text-xs font-semibold text-teal-600 hover:text-teal-700 transition-colors"

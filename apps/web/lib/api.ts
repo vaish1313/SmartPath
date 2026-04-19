@@ -32,8 +32,8 @@ function createInstance(baseURL: string) {
   return instance;
 }
 
-export const patientApi = createInstance("http://localhost:3001");
-export const bookingApi = createInstance("http://localhost:3002");
+export const patientApi = createInstance("https://patient-service-kfu5.onrender.com");
+export const bookingApi = createInstance("https://smartpath-5wup.onrender.com");
 
 // ── Auth ──
 export const loginUser = (email: string, password: string) => patientApi.post("/api/auth/login", { email, password });
