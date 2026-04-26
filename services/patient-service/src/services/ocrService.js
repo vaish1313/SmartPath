@@ -1,28 +1,52 @@
 const axios = require('axios');
+const FormData = require('form-data');
 
 /**
- * Extract text from image using Google Cloud Vision API
- * @param {string} base64Image - Base64 encoded image string (without data:image prefix)
+ * Extract text from image using OCR.space API
+ * @param {string} base64Image - Base64 encoded image string (with or without data:image prefix)
  * @returns {Promise<string>} - Extracted text from the image
  */
 async function extractTextFromImage(base64Image) {
   try {
+    // Ensure base64 has the data URI prefix
+    const base64WithPrefix = base64Image.startsWith('data:') 
+      ? base64Image 
+      : `data:image/jpeg;base64,${base64Image}`;
+
+    const formData = new FormData();
+    formData.append('base64Image', base64WithPrefix);
+    formData.append('language', 'eng');
+    formData.append('isOverlayRequired', 'false');
+    formData.append('detectOrientation', 'true');
+    formData.append('scale', 'true');
+    formData.append('OCREngine', '2'); // Engine 2 for better accuracy
+    formData.append('filetype', 'JPG'); // Default to JPG
+
     const response = await axios.post(
-      `https://vision.googleapis.com/v1/images:annotate?key=${process.env.GOOGLE_VISION_API_KEY}`,
+      'https://api.ocr.space/parse/image',
+      formData,
       {
-        requests: [
-          {
-            image: { content: base64Image },
-            features: [{ type: 'DOCUMENT_TEXT_DETECTION', maxResults: 1 }]
-          }
-        ]
+        headers: {
+          'apikey': process.env.OCR_API_KEY || process.env.GOOGLE_VISION_API_KEY || '',
+          ...formData.getHeaders()
+        }
       }
     );
 
-    const text = response.data.responses[0]?.fullTextAnnotation?.text || '';
+    const data = response.data;
+
+    if (data.IsErroredOnProcessing || data.OCRExitCode !== 1) {
+      const errorMsg = Array.isArray(data.ErrorMessage) 
+        ? data.ErrorMessage.join(', ') 
+        : data.ErrorMessage || 'OCR processing failed';
+      console.error('OCR.space API error:', errorMsg);
+      throw new Error(errorMsg);
+    }
+
+    const text = data.ParsedResults?.[0]?.ParsedText || '';
     return text;
   } catch (error) {
-    console.error('Google Vision API error:', error.response?.data || error.message);
+    console.error('OCR API error:', error.response?.data || error.message);
     throw new Error('Failed to extract text from image');
   }
 }

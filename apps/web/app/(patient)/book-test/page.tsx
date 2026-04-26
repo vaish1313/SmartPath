@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { getAllTests, getAvailableSlots, createBooking } from "@/lib/api";
+import { getAllTests, getAvailableSlots, createBooking, getProfile, updateProfile } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
 import { Search, Check, FlaskConical, Clock, Calendar, Home, Building2, ArrowLeft, ArrowRight, Loader2, X, MapPin, Upload } from "lucide-react";
 import axios from "axios";
@@ -41,6 +41,8 @@ export default function BookTestPage() {
     const [slotsLoading, setSlotsLoading] = useState(false);
     const [selectedSlot, setSelectedSlot] = useState("");
     const [address, setAddress] = useState({ street: "", city: "Nashik", state: "Maharashtra", pincode: "" });
+    const [addressLoading, setAddressLoading] = useState(false);
+    const [addressFetched, setAddressFetched] = useState(false);
 
     const [submitting, setSubmitting] = useState(false);
     const [success, setSuccess] = useState(false);
@@ -74,6 +76,31 @@ export default function BookTestPage() {
             .finally(() => setSlotsLoading(false));
     }, [selectedDate]);
 
+    // Auto-fill address when home-collection is selected
+    useEffect(() => {
+        if (collectionType === "home-collection" && !addressFetched && user) {
+            setAddressLoading(true);
+            getProfile()
+                .then((res) => {
+                    const profile = res.data.patient;
+                    if (profile?.address) {
+                        setAddress({
+                            street: profile.address.street || "",
+                            city: profile.address.city || "Nashik",
+                            state: profile.address.state || "Maharashtra",
+                            pincode: profile.address.pincode || "",
+                        });
+                    }
+                    setAddressFetched(true);
+                })
+                .catch((err) => {
+                    console.error("Failed to fetch profile:", err);
+                    setAddressFetched(true);
+                })
+                .finally(() => setAddressLoading(false));
+        }
+    }, [collectionType, addressFetched, user]);
+
     const categories = ["All", "Thyroid", "Diabetes", "Liver", "Kidney", ...Array.from(new Set(tests.map((t) => t.category))).filter(c => !["Thyroid", "Diabetes", "Liver", "Kidney"].includes(c))];
     const filteredTests = tests.filter((t) => {
         const matchSearch = t.testName.toLowerCase().includes(search.toLowerCase());
@@ -103,30 +130,46 @@ export default function BookTestPage() {
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     const result = e.target?.result as string;
-                    resolve(result.split(",")[1]);
+                    resolve(result);
                 };
                 reader.readAsDataURL(rxFile);
             });
 
-            // Step 1: Extract text using Google Cloud Vision API
-            const visionRes = await fetch(
-                `https://vision.googleapis.com/v1/images:annotate?key=${process.env.NEXT_PUBLIC_GOOGLE_VISION_API_KEY}`,
-                {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        requests: [
-                            {
-                                image: { content: base64 },
-                                features: [{ type: "DOCUMENT_TEXT_DETECTION", maxResults: 1 }]
-                            }
-                        ]
-                    })
-                }
-            );
+            // Determine file type from file name
+            const fileExtension = rxFile.name.split('.').pop()?.toUpperCase() || 'JPG';
+            const fileType = ['JPG', 'JPEG', 'PNG', 'PDF', 'GIF', 'BMP'].includes(fileExtension) ? fileExtension : 'JPG';
 
-            const visionData = await visionRes.json();
-            const rawText = visionData.responses?.[0]?.fullTextAnnotation?.text || "";
+            // Step 1: Extract text using OCR.space API
+            const formData = new FormData();
+            formData.append('base64Image', base64);
+            formData.append('language', 'eng');
+            formData.append('isOverlayRequired', 'false');
+            formData.append('detectOrientation', 'true');
+            formData.append('scale', 'true');
+            formData.append('OCREngine', '2'); // Use OCR Engine 2 for better accuracy
+            formData.append('filetype', fileType); // Explicitly set file type
+
+            const ocrRes = await fetch('https://api.ocr.space/parse/image', {
+                method: 'POST',
+                headers: {
+                    'apikey': process.env.NEXT_PUBLIC_OCR_API_KEY || ''
+                },
+                body: formData
+            });
+
+            const ocrData = await ocrRes.json();
+
+            if (!ocrRes.ok || ocrData.IsErroredOnProcessing || ocrData.OCRExitCode !== 1) {
+                const errorMsg = Array.isArray(ocrData.ErrorMessage) ? ocrData.ErrorMessage.join(', ') : ocrData.ErrorMessage || 'OCR processing failed';
+                console.error('OCR Error:', errorMsg);
+                setRxStructuredData({ rawText: errorMsg, parsed: null, error: "ocr_failed" });
+                setRxMatched(null);
+                setRxUnmatched(["Could not read prescription. Please select tests manually."]);
+                setRxScanning(false);
+                return;
+            }
+
+            const rawText = ocrData.ParsedResults?.[0]?.ParsedText || "";
 
             if (!rawText || rawText.trim().length === 0) {
                 setRxStructuredData({ rawText: "No text detected in image", parsed: null, error: "parse_failed" });
@@ -769,15 +812,55 @@ export default function BookTestPage() {
 
                             {collectionType === "home-collection" && (
                                 <div className="space-y-3">
-                                    <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5"><MapPin className="w-3 h-3" /> Collection address</p>
-                                    <input value={address.street} onChange={(e) => setAddress({ ...address, street: e.target.value })} placeholder="House / Flat no., Street, Area"
-                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 text-sm outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100 transition-all" />
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <input value={address.city} onChange={(e) => setAddress({ ...address, city: e.target.value })} placeholder="City"
-                                            className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 text-sm outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100 transition-all" />
-                                        <input value={address.pincode} onChange={(e) => setAddress({ ...address, pincode: e.target.value })} placeholder="Pincode"
-                                            className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 text-sm outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100 transition-all" />
-                                    </div>
+                                    <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                                        <MapPin className="w-3 h-3" /> Collection address
+                                    </p>
+
+                                    {addressLoading ? (
+                                        <div className="flex items-center justify-center py-6 bg-slate-50 rounded-xl border border-slate-200">
+                                            <Loader2 className="w-5 h-5 text-teal-500 animate-spin mr-2" />
+                                            <span className="text-slate-500 text-sm">Loading your address...</span>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            {!address.street && addressFetched && (
+                                                <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-3">
+                                                    <p className="text-amber-700 text-xs font-medium">
+                                                        📍 No saved address found. Please enter your address below.
+                                                    </p>
+                                                </div>
+                                            )}
+
+                                            {address.street && addressFetched && (
+                                                <div className="bg-teal-50 border border-teal-200 rounded-xl p-3 mb-3">
+                                                    <p className="text-teal-700 text-xs font-medium">
+                                                        ✓ Address auto-filled from your profile. You can edit it if needed.
+                                                    </p>
+                                                </div>
+                                            )}
+
+                                            <input
+                                                value={address.street}
+                                                onChange={(e) => setAddress({ ...address, street: e.target.value })}
+                                                placeholder="House / Flat no., Street, Area"
+                                                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 text-sm outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100 transition-all"
+                                            />
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <input
+                                                    value={address.city}
+                                                    onChange={(e) => setAddress({ ...address, city: e.target.value })}
+                                                    placeholder="City"
+                                                    className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 text-sm outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100 transition-all"
+                                                />
+                                                <input
+                                                    value={address.pincode}
+                                                    onChange={(e) => setAddress({ ...address, pincode: e.target.value })}
+                                                    placeholder="Pincode"
+                                                    className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 text-sm outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100 transition-all"
+                                                />
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
                             )}
                         </div>
