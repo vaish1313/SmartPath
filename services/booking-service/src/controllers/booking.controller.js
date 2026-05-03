@@ -193,6 +193,69 @@ const updateBookingStatus = async (req, res) => {
   const { status } = req.body;
   const booking = await Booking.findByIdAndUpdate(req.params.id, { status }, { new: true, runValidators: true });
   if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
+
+  // Auto-create invoice when booking is confirmed
+  if (status === 'confirmed') {
+    const Invoice = require('../models/Invoice');
+    const existingInvoice = await Invoice.findOne({ bookingId: booking._id });
+    
+    if (!existingInvoice) {
+      // Build items from booking tests + packages
+      const items = [];
+      for (const t of (booking.tests || [])) {
+        items.push({ description: t.testName || 'Test', quantity: 1, unitPrice: t.price || 0, totalPrice: t.price || 0 });
+      }
+      for (const p of (booking.packages || [])) {
+        items.push({ description: p.packageName || 'Package', quantity: 1, unitPrice: p.price || 0, totalPrice: p.price || 0 });
+      }
+      if (!items.length) {
+        items.push({ description: 'Diagnostic Services', quantity: 1, unitPrice: booking.finalAmount || 0, totalPrice: booking.finalAmount || 0 });
+      }
+
+      const subtotal = items.reduce((s, i) => s + i.totalPrice, 0);
+      const gstRate = 18;
+      const gstAmount = parseFloat(((subtotal * gstRate) / 100).toFixed(2));
+      const totalAmount = parseFloat((subtotal + gstAmount).toFixed(2));
+      const finalAmount = totalAmount;
+
+      await Invoice.create({
+        bookingId: booking._id,
+        patientId: booking.patientId,
+        patientName: booking.patientName,
+        patientPhone: booking.patientPhone,
+        items,
+        subtotal,
+        gstRate,
+        gstAmount,
+        totalAmount,
+        finalAmount,
+        balanceAmount: finalAmount,
+        paymentStatus: 'unpaid',
+      });
+
+      console.log(`[Auto-Invoice] Created invoice for booking ${booking.bookingId}`);
+    }
+  }
+
+  // Auto-create sample when status changes to sample-collected
+  if (status === 'sample-collected') {
+    const Sample = require('../models/Sample');
+    const existingSample = await Sample.findOne({ bookingId: booking._id });
+    
+    if (!existingSample) {
+      await Sample.create({
+        bookingId: booking._id,
+        patientId: booking.patientId,
+        patientName: booking.patientName,
+        collectedBy: req.user?.fullName || 'System',
+        collectedAt: new Date(),
+        status: 'collected',
+      });
+
+      console.log(`[Auto-Sample] Created sample for booking ${booking.bookingId}`);
+    }
+  }
+
   res.json({ success: true, booking });
 };
 

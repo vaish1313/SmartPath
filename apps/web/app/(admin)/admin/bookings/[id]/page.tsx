@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
-import { getBookingById, updateBookingStatus, assignTechnician, getStaffByRole } from "@/lib/api";
+import { getBookingById, updateBookingStatus, assignTechnician, getStaffByRole, getInvoiceByBooking } from "@/lib/api";
 import { ArrowLeft, Loader2, Calendar, Clock, MapPin, Home, Building2, User, CheckCircle2, Circle, FileText } from "lucide-react";
 import axios from "axios";
 
@@ -67,6 +67,8 @@ export default function BookingDetailPage() {
     const { data: session } = useSession();
     const [reportLoading, setReportLoading] = useState(false);
     const [reportToast, setReportToast] = useState<{ type: "success" | "error"; msg: string } | null>(null);
+    const [invoice, setInvoice] = useState<any>(null);
+    const [invoiceLoading, setInvoiceLoading] = useState(false);
 
     useEffect(() => {
         if (!id) { setError("Invalid booking ID"); setLoading(false); return; }
@@ -76,6 +78,20 @@ export default function BookingDetailPage() {
                 const b = res.data?.booking ?? res.data;
                 setBooking(b ?? null);
                 if (!b) setError("Booking not found");
+
+                // Fetch invoice for this booking
+                if (b?._id) {
+                    setInvoiceLoading(true);
+                    getInvoiceByBooking(b._id)
+                        .then((invRes) => {
+                            setInvoice(invRes.data?.invoice || null);
+                        })
+                        .catch(() => {
+                            // Invoice might not exist yet
+                            setInvoice(null);
+                        })
+                        .finally(() => setInvoiceLoading(false));
+                }
             })
             .catch((err) => {
                 if (!axios.isAxiosError(err) || err.response?.status !== 401)
@@ -99,6 +115,14 @@ export default function BookingDetailPage() {
         try {
             const res = await updateBookingStatus(booking._id, status);
             setBooking(res.data?.booking ?? null);
+
+            // If status changed to confirmed, redirect to billing/invoice page
+            if (status === "confirmed") {
+                // Wait a moment for invoice to be created
+                setTimeout(() => {
+                    router.push(`/admin/billing?bookingId=${booking._id}`);
+                }, 1500);
+            }
         } catch { setError("Failed to update status"); }
         finally { setUpdating(false); }
     };
@@ -273,6 +297,72 @@ export default function BookingDetailPage() {
                     </div>
                 </div>
             </div>
+
+            {/* Invoice Section */}
+            {invoiceLoading ? (
+                <div className="bg-white border border-slate-100 rounded-2xl shadow-sm p-5 mb-4">
+                    <div className="flex items-center justify-center py-8">
+                        <Loader2 className="w-5 h-5 text-teal-500 animate-spin" />
+                        <span className="ml-2 text-sm text-slate-500">Loading invoice...</span>
+                    </div>
+                </div>
+            ) : invoice ? (
+                <div className="bg-white border border-slate-100 rounded-2xl shadow-sm p-5 mb-4">
+                    <div className="flex items-center justify-between mb-3">
+                        <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Invoice</p>
+                        <Link href={`/admin/billing/${invoice._id}`} className="text-xs font-semibold text-teal-600 hover:text-teal-700">
+                            View Details →
+                        </Link>
+                    </div>
+                    <div className="bg-slate-50 rounded-xl p-4">
+                        <div className="flex items-center justify-between mb-3">
+                            <span className="text-sm font-mono font-semibold text-teal-600">{invoice.invoiceId}</span>
+                            <span className={`text-[10px] font-semibold px-2.5 py-1 rounded-full border capitalize ${invoice.paymentStatus === "paid" ? "bg-teal-50 text-teal-700 border-teal-200" :
+                                    invoice.paymentStatus === "partial" ? "bg-amber-50 text-amber-700 border-amber-200" :
+                                        "bg-red-50 text-red-600 border-red-200"
+                                }`}>
+                                {invoice.paymentStatus}
+                            </span>
+                        </div>
+                        <div className="space-y-1.5 text-sm">
+                            <div className="flex justify-between">
+                                <span className="text-slate-500">Subtotal</span>
+                                <span className="text-slate-700">₹{invoice.subtotal}</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-slate-500">GST ({invoice.gstRate}%)</span>
+                                <span className="text-slate-700">₹{invoice.gstAmount}</span>
+                            </div>
+                            <div className="flex justify-between font-bold border-t border-slate-200 pt-1.5">
+                                <span className="text-slate-700">Total Amount</span>
+                                <span className="text-teal-600">₹{invoice.finalAmount}</span>
+                            </div>
+                            <div className="flex justify-between text-xs">
+                                <span className="text-slate-500">Paid</span>
+                                <span className="text-teal-600 font-semibold">₹{invoice.paidAmount}</span>
+                            </div>
+                            {invoice.balanceAmount > 0 && (
+                                <div className="flex justify-between text-xs">
+                                    <span className="text-slate-500">Balance</span>
+                                    <span className="text-red-600 font-semibold">₹{invoice.balanceAmount}</span>
+                                </div>
+                            )}
+                        </div>
+                        {invoice.paymentStatus !== "paid" && (
+                            <Link href={`/admin/billing/${invoice._id}`}
+                                className="mt-3 w-full flex items-center justify-center gap-2 bg-teal-600 hover:bg-teal-700 text-white font-bold text-sm px-4 py-2 rounded-xl transition-all">
+                                Record Payment
+                            </Link>
+                        )}
+                    </div>
+                </div>
+            ) : status === "confirmed" || status === "sample-collected" || status === "processing" || status === "completed" ? (
+                <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-4">
+                    <p className="text-sm text-amber-700">
+                        ⚠️ Invoice not found. It should have been auto-generated when booking was confirmed.
+                    </p>
+                </div>
+            ) : null}
 
             {/* Actions */}
             <div className="bg-white border border-slate-100 rounded-2xl shadow-sm p-5">

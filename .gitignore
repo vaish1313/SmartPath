@@ -30,6 +30,10 @@ pnpm-debug.log*
 # Testing
 coverage/
 .nyc_output
+**/*.test.js
+**/*.test.ts
+**/*.spec.js
+**/*.spec.ts
 
 # IDE
 .vscode/
@@ -48,3 +52,11 @@ Thumbs.db
 
 # Generated PDFs
 apps/web/public/generated/*.pdf
+
+# Database dumps
+mongo-dump/
+*.dump
+
+# Development scripts
+scripts/clear-db.js
+scripts/drop-indexes.js

@@ -17,7 +17,7 @@
 ## 🛠️ Tech Stack
 
 **Frontend:** Next.js 14, TypeScript, Tailwind CSS, Zustand  
-**Backend:** Node.js, Express, MongoDB, Redis  
+**Backend:** Node.js, Express, MongoDB  
 **Auth:** JWT + NextAuth (Google OAuth)  
 **Payments:** Razorpay | **PDF:** Puppeteer
 
@@ -39,12 +39,11 @@ smartpath/
 ## 🚀 Quick Start
 
 ```bash
-# 1. Install
+# 1. Install dependencies
 npm install
 
-# 2. Start MongoDB & Redis
-docker run -d -p 27017:27017 --name mongodb mongo
-docker run -d -p 6379:6379 --name redis redis
+# 2. Ensure MongoDB is running locally
+# MongoDB should be running on mongodb://localhost:27017
 
 # 3. Seed database
 npm run seed-db
@@ -68,8 +67,7 @@ npm run dev
 
 ### `.env` (root)
 ```env
-MONGO_URL=mongodb://admin:your_password@localhost:27017/smartpath?authSource=admin
-REDIS_URL=redis://:your_password@localhost:6379
+MONGO_URL=mongodb://localhost:27017/smartpath
 JWT_SECRET=your-super-secret-jwt-key
 RAZORPAY_KEY_ID=rzp_test_your_key_id
 RAZORPAY_KEY_SECRET=your_razorpay_secret
@@ -118,34 +116,6 @@ npm run seed-db    # Seed test data
 npm run reset-db   # Wipe database
 npm run build      # Build all packages
 ```
-
----
-
-## 🐳 Docker Deployment
-
-### Quick Start with Docker
-
-```bash
-# Development
-cd infrastructure/docker
-docker compose up -d
-
-# Production
-docker compose -f docker-compose.prod.yml up -d --build
-```
-
-### Automated Deployment
-
-```bash
-# Windows
-.\deploy.ps1
-
-# Linux/Mac
-chmod +x deploy.sh
-./deploy.sh
-```
-
-**See `DEPLOYMENT_GUIDE.md` for complete deployment instructions.**
 
 ---
 

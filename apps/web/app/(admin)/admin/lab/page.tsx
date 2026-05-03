@@ -11,7 +11,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import axios from "axios";
 
-interface Sample { _id: string; sampleId: string; barcode: string; patientName: string; collectedAt?: string; collectedBy?: string; status: string; }
+interface Sample { _id: string; sampleId: string; barcode: string; patientName: string; collectedAt?: string; collectedBy?: string; status: string; bookingId?: string; isPendingBooking?: boolean; }
 interface Result { _id: string; resultId: string; patientName: string; tests: { testName: string }[]; approvalStatus: string; createdAt: string; }
 interface Booking { _id: string; bookingId: string; patientId: string; patientName: string; tests: { testId: string; testName: string }[] }
 interface Technician { _id: string; fullName: string; email: string; role: string; }
@@ -77,9 +77,40 @@ export default function AdminLabPage() {
     useEffect(() => {
         setLoading(true);
         if (tab === "samples") {
-            getAllSamples({ limit: 50 })
-                .then((res) => setSamples(res.data.samples || []))
-                .catch((err) => { if (!axios.isAxiosError(err) || err.response?.status !== 401) setError("Failed to load samples"); })
+            // Fetch both samples and confirmed bookings without samples
+            Promise.all([
+                getAllSamples({ limit: 50 }),
+                getAllBookings({ limit: 100, status: "confirmed" })
+            ])
+                .then(([samplesRes, bookingsRes]) => {
+                    const fetchedSamples = samplesRes.data.samples || [];
+                    const confirmedBookings = bookingsRes.data.bookings || [];
+
+                    // Filter out bookings that already have samples
+                    const sampleBookingIds = new Set(fetchedSamples.map((s: Sample) => s.bookingId));
+                    const bookingsWithoutSamples = confirmedBookings.filter(
+                        (b: Booking) => !sampleBookingIds.has(b._id)
+                    );
+
+                    // Convert bookings to sample-like objects for display
+                    const pendingSamples = bookingsWithoutSamples.map((b: Booking) => ({
+                        _id: b._id,
+                        sampleId: `Pending`,
+                        barcode: '—',
+                        patientName: b.patientName,
+                        collectedBy: null,
+                        collectedAt: null,
+                        status: 'pending',
+                        bookingId: b._id,
+                        isPendingBooking: true,
+                    }));
+
+                    setSamples([...pendingSamples, ...fetchedSamples]);
+                })
+                .catch((err) => {
+                    if (!axios.isAxiosError(err) || err.response?.status !== 401)
+                        setError("Failed to load samples");
+                })
                 .finally(() => setLoading(false));
         } else {
             getAllResults({ limit: 50 })
@@ -296,7 +327,13 @@ export default function AdminLabPage() {
                                         <tr><td colSpan={7} className="px-5 py-16 text-center text-slate-400 text-sm">No samples found. <Link href="/admin/lab/samples/new" className="text-teal-600 font-semibold">Create one</Link></td></tr>
                                     ) : samples.map((s) => (
                                         <tr key={s._id} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
-                                            <td className="px-5 py-3.5 text-teal-600 font-semibold font-mono text-xs">{s.sampleId}</td>
+                                            <td className="px-5 py-3.5 text-teal-600 font-semibold font-mono text-xs">
+                                                {s.isPendingBooking ? (
+                                                    <span className="text-amber-600">Awaiting Collection</span>
+                                                ) : (
+                                                    s.sampleId
+                                                )}
+                                            </td>
                                             <td className="px-5 py-3.5 text-slate-500 font-mono text-xs">{s.barcode}</td>
                                             <td className="px-5 py-3.5 text-slate-700 font-medium">{s.patientName}</td>
                                             <td className="px-5 py-3.5">
@@ -319,13 +356,19 @@ export default function AdminLabPage() {
                                             </td>
                                             <td className="px-5 py-3.5">
                                                 <div className="flex items-center gap-2">
-                                                    {s.status === "collected" && (
+                                                    {s.isPendingBooking && (
+                                                        <Link href={`/admin/lab/samples/new?bookingId=${s.bookingId}`}
+                                                            className="text-xs font-semibold text-teal-600 hover:text-teal-700 bg-teal-50 hover:bg-teal-100 px-2.5 py-1 rounded-lg transition-all">
+                                                            Collect Sample
+                                                        </Link>
+                                                    )}
+                                                    {s.status === "collected" && !s.isPendingBooking && (
                                                         <button disabled={updatingId === s._id} onClick={() => handleSampleStatus(s._id, "processing")}
                                                             className="text-xs font-semibold text-violet-600 hover:text-violet-700 bg-violet-50 hover:bg-violet-100 px-2.5 py-1 rounded-lg transition-all disabled:opacity-50">
                                                             {updatingId === s._id ? <Loader2 className="w-3 h-3 animate-spin" /> : "Mark Processing"}
                                                         </button>
                                                     )}
-                                                    {s.status === "processing" && (
+                                                    {s.status === "processing" && !s.isPendingBooking && (
                                                         <button disabled={updatingId === s._id} onClick={() => handleSampleStatus(s._id, "completed")}
                                                             className="text-xs font-semibold text-teal-600 hover:text-teal-700 bg-teal-50 hover:bg-teal-100 px-2.5 py-1 rounded-lg transition-all disabled:opacity-50">
                                                             {updatingId === s._id ? <Loader2 className="w-3 h-3 animate-spin" /> : "Mark Complete"}

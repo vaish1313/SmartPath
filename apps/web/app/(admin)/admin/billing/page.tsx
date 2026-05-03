@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import PageHeader from "@/components/shared/PageHeader";
-import { getAllInvoices, getAllBookings, createInvoice } from "@/lib/api";
+import { getAllInvoices, getAllBookings, createInvoice, getInvoiceByBooking } from "@/lib/api";
 import { Plus, Search, Loader2, Receipt, Eye, X, CheckCircle } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -73,6 +73,7 @@ export default function AdminBillingPage() {
     const [bookings, setBookings] = useState<Booking[]>([]);
     const [bookingSearch, setBookingSearch] = useState("");
     const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+    const [highlightInvoiceId, setHighlightInvoiceId] = useState<string | null>(null);
 
     const { register, handleSubmit, reset, watch, formState: { errors, isSubmitting } } =
         useForm<InvoiceFormData>({ resolver: zodResolver(invoiceSchema) });
@@ -81,6 +82,31 @@ export default function AdminBillingPage() {
     const discountValue = watch("discountValue", "");
 
     const debouncedSearch = useDebounce(search);
+
+    // Check for bookingId in URL params
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const bookingId = params.get('bookingId');
+        if (bookingId) {
+            // Find and highlight the invoice for this booking
+            getInvoiceByBooking(bookingId)
+                .then((res) => {
+                    if (res.data?.invoice) {
+                        setHighlightInvoiceId(res.data.invoice._id);
+                        // Scroll to invoice after a short delay
+                        setTimeout(() => {
+                            const element = document.getElementById(`invoice-${res.data.invoice._id}`);
+                            if (element) {
+                                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            }
+                        }, 500);
+                    }
+                })
+                .catch(() => {
+                    // Invoice not found
+                });
+        }
+    }, []);
 
     const fetchInvoices = useCallback(() => {
         setLoading(true);
@@ -246,7 +272,12 @@ export default function AdminBillingPage() {
                                 </thead>
                                 <tbody>
                                     {invoices.map((inv) => (
-                                        <tr key={inv._id} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
+                                        <tr
+                                            key={inv._id}
+                                            id={`invoice-${inv._id}`}
+                                            className={`border-b border-slate-50 hover:bg-slate-50/50 transition-colors ${highlightInvoiceId === inv._id ? 'bg-teal-50/50 animate-pulse' : ''
+                                                }`}
+                                        >
                                             <td className="px-5 py-3.5 text-teal-600 font-semibold font-mono text-xs">{inv.invoiceId}</td>
                                             <td className="px-5 py-3.5">
                                                 <p className="text-slate-700 font-semibold">{inv.patientName}</p>

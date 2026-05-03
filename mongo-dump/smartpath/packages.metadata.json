@@ -1,1 +1,0 @@
-{"indexes":[{"v":{"$numberInt":"2"},"key":{"_id":{"$numberInt":"1"}},"name":"_id_"},{"v":{"$numberInt":"2"},"key":{"packageCode":{"$numberInt":"1"}},"name":"packageCode_1","background":true,"unique":true}],"uuid":"c6d365ba9e764e4b992a8f6b7d89d9e5","collectionName":"packages","type":"collection"}

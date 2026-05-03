@@ -22,8 +22,23 @@ export default function NewSamplePage() {
     const [barcode, setBarcode] = useState("");
 
     useEffect(() => {
+        // Get bookingId from URL if present
+        const params = new URLSearchParams(window.location.search);
+        const bookingIdParam = params.get('bookingId');
+
         getAllBookings({ status: "confirmed", limit: 50 })
-            .then((res) => setBookings(res.data.bookings || []))
+            .then((res) => {
+                const fetchedBookings = res.data.bookings || [];
+                setBookings(fetchedBookings);
+
+                // Auto-select booking if bookingId is in URL
+                if (bookingIdParam) {
+                    const preselected = fetchedBookings.find((b: Booking) => b._id === bookingIdParam);
+                    if (preselected) {
+                        setSelected(preselected);
+                    }
+                }
+            })
             .catch(console.error)
             .finally(() => setLoading(false));
     }, []);
