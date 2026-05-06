@@ -6,8 +6,16 @@ const router = express.Router();
 
 // Public catalog — no auth required
 router.get('/catalog', async (req, res) => {
-  const tests = await Test.find({ isActive: true }).sort({ testName: 1 });
-  res.json({ success: true, tests });
+  const tests = await Test.find({ isActive: true }).sort({ testName: 1 }).lean();
+  // Add backward compatibility: ensure both old and new field names exist
+  const testsWithCompat = tests.map(t => ({
+    ...t,
+    name: t.name || t.testName,
+    testName: t.testName || t.name,
+    code: t.code || t.testCode,
+    testCode: t.testCode || t.code,
+  }));
+  res.json({ success: true, tests: testsWithCompat });
 });
 
 // All other routes require auth
@@ -31,18 +39,35 @@ router.get('/', async (req, res) => {
 
   const skip = (page - 1) * limit;
   const [tests, total] = await Promise.all([
-    Test.find(query).skip(skip).limit(limit).sort({ createdAt: -1 }),
+    Test.find(query).skip(skip).limit(limit).sort({ createdAt: -1 }).lean(),
     Test.countDocuments(query),
   ]);
 
-  res.json({ success: true, tests, total, page, totalPages: Math.ceil(total / limit) });
+  // Add backward compatibility: ensure both old and new field names exist
+  const testsWithCompat = tests.map(t => ({
+    ...t,
+    name: t.name || t.testName,
+    testName: t.testName || t.name,
+    code: t.code || t.testCode,
+    testCode: t.testCode || t.code,
+  }));
+
+  res.json({ success: true, tests: testsWithCompat, total, page, totalPages: Math.ceil(total / limit) });
 });
 
 // GET /api/tests/:id
 router.get('/:id', async (req, res) => {
-  const test = await Test.findById(req.params.id);
+  const test = await Test.findById(req.params.id).lean();
   if (!test) return res.status(404).json({ success: false, message: 'Test not found' });
-  res.json({ success: true, test });
+  // Add backward compatibility
+  const testWithCompat = {
+    ...test,
+    name: test.name || test.testName,
+    testName: test.testName || test.name,
+    code: test.code || test.testCode,
+    testCode: test.testCode || test.code,
+  };
+  res.json({ success: true, test: testWithCompat });
 });
 
 // POST /api/tests — admin only

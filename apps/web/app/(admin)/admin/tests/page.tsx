@@ -74,7 +74,10 @@ export default function AdminTestsPage() {
         setLoading(true);
         getAllTests({ page, limit: 15, search: debouncedSearch })
             .then((res) => {
-                setTests(res.data.tests || []);
+                // Handle API response - use raw data without over-normalization
+                const rawTests = res.data.tests || [];
+                console.log('Raw test data:', rawTests[0]); // Debug log
+                setTests(rawTests);
                 setTotal(res.data.total || 0);
                 setTotalPages(res.data.totalPages || 1);
             })
@@ -93,8 +96,12 @@ export default function AdminTestsPage() {
             .then((res) => {
                 const t = res.data.test;
                 reset({
-                    testName: t.testName, category: t.category, sampleType: t.sampleType,
-                    price: t.price, discountedPrice: t.discountedPrice, turnaroundTime: t.turnaroundTime,
+                    testName: t.testName || t.name || '',
+                    category: t.category,
+                    sampleType: t.sampleType,
+                    price: t.price,
+                    discountedPrice: t.discountedPrice,
+                    turnaroundTime: t.turnaroundTime,
                     description: t.description || "",
                     normalRangeMale: t.normalRange?.male || "",
                     normalRangeFemale: t.normalRange?.female || "",
@@ -200,14 +207,14 @@ export default function AdminTestsPage() {
                                                     <span className="text-teal-600 font-bold font-mono text-xs">{t.testCode}</span>
                                                 </div>
                                             </td>
-                                            <td className="px-5 py-3.5 text-slate-700 font-semibold">{t.testName}</td>
+                                            <td className="px-5 py-3.5 text-slate-700 font-semibold">{t?.testName || t?.name || 'Unnamed Test'}</td>
                                             <td className="px-5 py-3.5 text-slate-500 capitalize">{t.category}</td>
                                             <td className="px-5 py-3.5 text-slate-500 capitalize">{t.sampleType}</td>
                                             <td className="px-5 py-3.5">
                                                 <span className="text-teal-600 font-bold">₹{t.discountedPrice ?? t.price}</span>
                                                 {t.discountedPrice && <span className="text-slate-400 line-through text-xs ml-1">₹{t.price}</span>}
                                             </td>
-                                            <td className="px-5 py-3.5 text-slate-500">{t.turnaroundTime}h</td>
+                                            <td className="px-5 py-3.5 text-slate-500">{t.turnaroundTime || 0}h</td>
                                             <td className="px-5 py-3.5">
                                                 <span className={`text-[10px] font-semibold px-2.5 py-1 rounded-full border ${t.isActive ? "bg-teal-50 text-teal-700 border-teal-200" : "bg-slate-100 text-slate-500 border-slate-200"}`}>
                                                     {t.isActive ? "Active" : "Inactive"}
