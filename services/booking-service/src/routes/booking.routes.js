@@ -19,6 +19,7 @@ router.post('/', authorizeRoles('admin', 'receptionist', 'patient'), createBooki
 router.get('/', authorizeRoles('admin', 'receptionist', 'lab_technician', 'pathologist'), getAllBookings);
 router.get('/my', getMyBookings);
 router.get('/patient/:patientId', getPatientBookings);
+router.delete('/patient/:patientId/cascade', authorizeRoles('admin'), require('../controllers/booking.controller').cascadeDeletePatientData);
 router.get('/:id', getBookingById);
 router.put('/:id/status', authorizeRoles('admin', 'receptionist', 'lab_technician', 'pathologist'), updateBookingStatus);
 router.put('/:id/assign', authorizeRoles('admin', 'receptionist'), assignTechnician);

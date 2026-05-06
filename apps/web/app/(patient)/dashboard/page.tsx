@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import axios from "axios";
 import PageLoader from "@/components/shared/PageLoader";
+import ProfileCompletionModal from "@/components/shared/ProfileCompletionModal";
 
 interface Booking {
     _id: string;
@@ -161,6 +162,7 @@ export default function DashboardPage() {
     const [results, setResults] = useState<TestResult[]>([]);
     const [loading, setLoading] = useState(true);
     const [pageLoading, setPageLoading] = useState(true);
+    const [showProfileModal, setShowProfileModal] = useState(false);
 
     useEffect(() => {
         Promise.all([
@@ -170,8 +172,17 @@ export default function DashboardPage() {
         ])
             .then(([bookingsRes, profileRes, resultsRes]) => {
                 setBookings(bookingsRes.data.bookings || []);
-                setProfile(profileRes.data.patient || profileRes.data);
+                const profileData = profileRes.data.patient || profileRes.data;
+                setProfile(profileData);
                 setResults(resultsRes.data.results || []);
+
+                // Check if profile is incomplete (phone starts with GOOGLE- or is missing)
+                const needsProfileCompletion =
+                    !profileData.phone ||
+                    profileData.phone.startsWith("GOOGLE-") ||
+                    profileData.phone.length !== 10;
+
+                setShowProfileModal(needsProfileCompletion);
             })
             .catch((err) => {
                 if (!axios.isAxiosError(err) || err.response?.status !== 401) console.error(err);
@@ -181,6 +192,14 @@ export default function DashboardPage() {
                 setPageLoading(false);
             });
     }, [user?.id]);
+
+    const handleProfileComplete = () => {
+        setShowProfileModal(false);
+        // Refresh profile data
+        getProfile().then((res) => {
+            setProfile(res.data.patient || res.data);
+        });
+    };
 
     const total = bookings.length;
     const completed = bookings.filter((b) => b.status === "completed").length;
@@ -226,6 +245,13 @@ export default function DashboardPage() {
 
     return (
         <main className="flex-1 p-5 bg-[#F5F5F3] overflow-auto">
+            {/* Profile Completion Modal */}
+            <ProfileCompletionModal
+                isOpen={showProfileModal}
+                onComplete={handleProfileComplete}
+                currentPhone={profile?.phone}
+            />
+
             {/* Topbar */}
             <div className="flex items-center justify-between mb-5">
                 <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white" style={{ border: "0.5px solid rgba(0,0,0,0.1)" }}>

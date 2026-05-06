@@ -9,8 +9,18 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ["var(--font-dm-sans)", "system-ui"],
-        serif: ["var(--font-instrument-serif)", "serif"],
+        sans: ["var(--font-poppins)", "system-ui", "sans-serif"],
+      },
+      fontSize: {
+        xs: ['0.8125rem', { lineHeight: '1.25rem' }],      // 13px
+        sm: ['0.9375rem', { lineHeight: '1.5rem' }],       // 15px
+        base: ['1.0625rem', { lineHeight: '1.75rem' }],    // 17px (increased from 16px)
+        lg: ['1.1875rem', { lineHeight: '1.875rem' }],     // 19px
+        xl: ['1.3125rem', { lineHeight: '2rem' }],         // 21px
+        '2xl': ['1.5625rem', { lineHeight: '2.25rem' }],   // 25px
+        '3xl': ['1.9375rem', { lineHeight: '2.5rem' }],    // 31px
+        '4xl': ['2.4375rem', { lineHeight: '3rem' }],      // 39px
+        '5xl': ['3.0625rem', { lineHeight: '3.5rem' }],    // 49px
       },
       animation: {
         marquee: "marquee 18s linear infinite",

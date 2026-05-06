@@ -214,13 +214,59 @@ const registerGoogle = async (req, res) => {
   });
 };
 
-/* ── Admin: soft delete ── */
+/* ── Admin: cascade delete patient and all related data ── */
 const deactivatePatient = async (req, res) => {
-  const patient = await Patient.findByIdAndUpdate(req.params.id, { isActive: false }, { new: true }).select('-password');
-  if (!patient) return res.status(404).json({ success: false, message: 'Patient not found' });
+  try {
+    const patientId = req.params.id;
+    
+    // Find patient first to verify existence
+    const patient = await Patient.findById(patientId).select('-password');
+    if (!patient) {
+      return res.status(404).json({ success: false, message: 'Patient not found' });
+    }
 
-  await redis.del(`patient:${req.params.id}`);
-  res.status(200).json({ success: true, message: 'Patient deactivated successfully', patient });
+    // Call booking service to delete all related data (bookings, invoices, samples, results)
+    try {
+      const bookingServiceUrl = `http://localhost:${process.env.BOOKING_SERVICE_PORT || 3002}/api/bookings/patient/${patientId}/cascade`;
+      const token = process.env.INTERNAL_SERVICE_TOKEN || process.env.JWT_SECRET;
+      
+      const response = await require('axios').delete(bookingServiceUrl, {
+        headers: { Authorization: `Bearer ${token}` },
+        timeout: 10000,
+      });
+      
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`[Cascade Delete] Booking service response:`, response.data);
+      }
+    } catch (bookingError) {
+      console.error('[Cascade Delete] Error deleting booking data:', bookingError.message);
+      // Continue with patient deletion even if booking service fails
+      // This ensures patient is deleted even if booking service is down
+    }
+
+    // Hard delete patient from database
+    await Patient.findByIdAndDelete(patientId);
+    
+    // Clear Redis cache
+    await redis.del(`patient:${patientId}`);
+    
+    res.status(200).json({ 
+      success: true, 
+      message: 'Patient and all related data deleted successfully',
+      deletedPatient: {
+        id: patient._id,
+        fullName: patient.fullName,
+        email: patient.email
+      }
+    });
+  } catch (error) {
+    console.error('[Cascade Delete] Error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error deleting patient',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
 };
 
 module.exports = {

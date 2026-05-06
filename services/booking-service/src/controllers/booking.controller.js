@@ -366,8 +366,61 @@ const getAvailableSlots = async (req, res) => {
   res.json({ success: true, date: format(searchDate, 'yyyy-MM-dd'), slots: result });
 };
 
+/* ── Cascade delete all patient data ── */
+const cascadeDeletePatientData = async (req, res) => {
+  try {
+    const { patientId } = req.params;
+    
+    if (!patientId) {
+      return res.status(400).json({ success: false, message: 'Patient ID is required' });
+    }
+
+    // Delete all bookings for this patient
+    const deletedBookings = await Booking.deleteMany({ patientId });
+    
+    // Delete all invoices for this patient
+    const Invoice = require('../models/Invoice');
+    const deletedInvoices = await Invoice.deleteMany({ patientId });
+    
+    // Delete all samples for this patient
+    const Sample = require('../models/Sample');
+    const deletedSamples = await Sample.deleteMany({ patientId });
+    
+    // Delete all results for this patient
+    const Result = require('../models/Result');
+    const deletedResults = await Result.deleteMany({ patientId });
+    
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[Cascade Delete] Deleted data for patient ${patientId}:`, {
+        bookings: deletedBookings.deletedCount,
+        invoices: deletedInvoices.deletedCount,
+        samples: deletedSamples.deletedCount,
+        results: deletedResults.deletedCount,
+      });
+    }
+    
+    res.json({
+      success: true,
+      message: 'All patient data deleted successfully',
+      deleted: {
+        bookings: deletedBookings.deletedCount,
+        invoices: deletedInvoices.deletedCount,
+        samples: deletedSamples.deletedCount,
+        results: deletedResults.deletedCount,
+      }
+    });
+  } catch (error) {
+    console.error('[Cascade Delete] Error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error deleting patient data',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
 module.exports = {
   createBooking, getAllBookings, getPatientBookings, getMyBookings,
   getBookingById, updateBookingStatus, assignTechnician, cancelBooking, getAvailableSlots,
-  getDashboardStats,
+  getDashboardStats, cascadeDeletePatientData,
 };
