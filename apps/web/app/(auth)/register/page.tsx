@@ -120,11 +120,11 @@ export default function RegisterPage() {
                         <span className="text-white text-xs font-semibold tracking-wider uppercase">Free patient account</span>
                     </div>
                     <h1
-                        className="text-[clamp(2.2rem,3.5vw,3rem)] font-bold leading-[1.15] text-white mb-5"
+                        className="text-[clamp(2.2rem,3.5vw,3rem)] font-bold leading-snug text-white mb-5"
                         style={{ fontFamily: "'Instrument Serif', serif", letterSpacing: "-0.02em" }}
                     >
-                        Your health journey<br />
-                        <span className="text-teal-100">starts here.</span>
+                        Your health journey
+                        <span className="block text-teal-100">starts here.</span>
                     </h1>
                     <p className="text-teal-100 text-base leading-relaxed max-w-sm">
                         Create your account in 2 minutes. Get instant access to test booking, live sample tracking, and digital reports.

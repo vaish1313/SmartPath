@@ -84,11 +84,11 @@ export default function LoginPage() {
                         <span className="text-white text-xs font-semibold tracking-wider uppercase">Prathamesh Advanced Diagnostic Center</span>
                     </div>
                     <h1
-                        className="text-[clamp(2.2rem,3.5vw,3rem)] font-bold leading-[1.15] text-white mb-5"
+                        className="text-[clamp(2.2rem,3.5vw,3rem)] font-bold leading-snug text-white mb-5"
                         style={{ fontFamily: "'Instrument Serif', serif", letterSpacing: "-0.02em" }}
                     >
-                        Precision diagnostics,<br />
-                        <span className="text-teal-100">intelligently managed.</span>
+                        Precision diagnostics,
+                        <span className="block text-teal-100">intelligently managed.</span>
                     </h1>
                     <p className="text-teal-100 text-base leading-relaxed max-w-sm">
                         Book tests, track samples, access reports — a complete lab management experience for patients and staff.

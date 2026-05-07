@@ -40,12 +40,11 @@ export default function HowItWorks() {
                 <div className="text-center mb-12">
                     <Badge>How it works</Badge>
                     <h2
-                        className="text-[clamp(2rem,4vw,3rem)] font-bold mt-5 tracking-tight text-[#1a2332]"
+                        className="text-[clamp(2rem,4vw,3rem)] font-bold mt-5 tracking-tight text-[#1a2332] leading-snug"
                         style={{ fontFamily: "'Instrument Serif', serif" }}
                     >
                         From booking to report
-                        <br />
-                        <span className="text-teal-600">in 4 simple steps.</span>
+                        <span className="block text-teal-600">in 4 simple steps.</span>
                     </h2>
                 </div>
 

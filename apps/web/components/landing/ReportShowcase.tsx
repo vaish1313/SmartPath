@@ -50,12 +50,11 @@ export default function ReportShowcase() {
             <div className="text-center mb-14 px-6 relative z-10">
                 <Badge>Lab Reports</Badge>
                 <h2
-                    className="text-[clamp(2rem,4vw,3rem)] font-bold mt-5 tracking-tight text-[#1a2332]"
+                    className="text-[clamp(2rem,4vw,3rem)] font-bold mt-5 tracking-tight text-[#1a2332] leading-snug"
                     style={{ fontFamily: "'Instrument Serif', serif" }}
                 >
                     Professional, certified reports
-                    <br />
-                    <span className="text-teal-600">delivered digitally.</span>
+                    <span className="block text-teal-600">delivered digitally.</span>
                 </h2>
                 <p className="text-slate-500 max-w-xl mx-auto text-base mt-4">
                     Every report from Prathamesh Advanced Diagnostic Center is NABL-certified,

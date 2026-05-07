@@ -117,12 +117,11 @@ export default function Features() {
                 <div className="text-center mb-16">
                     <Badge>Why SmartPath</Badge>
                     <h2
-                        className="text-[clamp(2rem,4vw,3rem)] font-bold mt-5 mb-4 tracking-tight text-[#1a2332]"
+                        className="text-[clamp(2rem,4vw,3rem)] font-bold mt-5 mb-4 tracking-tight text-[#1a2332] leading-snug"
                         style={{ fontFamily: "'Instrument Serif', serif" }}
                     >
                         Everything your lab visit needs,
-                        <br />
-                        <span className="text-teal-600">without the wait.</span>
+                        <span className="block text-teal-600">without the wait.</span>
                     </h2>
                     <p className="text-slate-500 max-w-xl mx-auto text-base">
                         A modern patient portal built for Prathamesh Diagnostic — from booking to report, fully digital.
